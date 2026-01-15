@@ -76,6 +76,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
   const [priority, setPriority] = useState<Priority>("Medium");
   const [country, setCountry] = useState("");
   const [frequency, setFrequency] = useState(1);
+  const [cutOffTime, setCutOffTime] = useState(24);
   const [collectionStartDate, setCollectionStartDate] = useState<Date>(new Date());
   const [collectionEndDate, setCollectionEndDate] = useState<Date | null>(null);
   const [collectPopularOnly, setCollectPopularOnly] = useState(false);
@@ -92,6 +93,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
     setPriority("Medium");
     setCountry("");
     setFrequency(1);
+    setCutOffTime(24);
     setCollectionStartDate(new Date());
     setCollectionEndDate(null);
     setCollectPopularOnly(false);
@@ -131,6 +133,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       url: url.trim(),
       requestType: requestTypeMap[taskType],
       frequency: taskType === "RECURRING" ? frequency : 0,
+      cutOffTime: taskType === "LIVESTREAM" ? cutOffTime : undefined,
       depth,
       priority,
       country,
@@ -153,192 +156,264 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
         </DialogTitle>
 
         <DialogContent dividers>
-          {/* URL */}
-          <TextField
-            fullWidth
-            required
-            label="URL"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            margin="normal"
-            placeholder="Enter URL"
-          />
-
-          {/* Quick Start Buttons */}
-          <Box sx={{ display: "flex", gap: 1, my: 2, flexWrap: "wrap" }}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                setTaskType("ADHOC");
-                setDepthType("lastHours");
-                setPriority("Medium");
-              }}
-            >
-              Quick Start
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                setTaskType("ADHOC");
-                setDepthType("lastHours");
-              }}
-            >
-              One-time
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                setTaskType("RECURRING");
-                setDepthType("lastHours");
-              }}
-            >
-              Recurring (Timely)
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                setTaskType("RECURRING");
-                setDepthType("dateRange");
-              }}
-            >
-              Recurring (Complete)
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                setTaskType("LIVESTREAM");
-                setDepthType("dateRange");
-              }}
-            >
-              Livestream
-            </Button>
-          </Box>
-
-          {/* Task Type */}
-          <FormControl component="fieldset" margin="normal" fullWidth>
-            <FormLabel component="legend">Task Type</FormLabel>
-            <RadioGroup
-              row
-              value={taskType}
-              onChange={(e) => setTaskType(e.target.value as typeof taskType)}
-            >
-              <FormControlLabel value="ADHOC" control={<Radio />} label="One-time" />
-              <FormControlLabel value="RECURRING" control={<Radio />} label="Recurring" />
-              <FormControlLabel value="LIVESTREAM" control={<Radio />} label="Livestream" />
-            </RadioGroup>
-          </FormControl>
-
-          {/* Frequency (only for Recurring) */}
-          {taskType === "RECURRING" && (
+          {/* Box 1: URL and Quick Start */}
+          <Box
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 1,
+              p: 2,
+              mb: 2,
+            }}
+          >
+            {/* URL */}
             <TextField
               fullWidth
-              type="number"
-              label="Frequency (hours)"
-              value={frequency}
-              onChange={(e) => setFrequency(Math.max(1, parseInt(e.target.value) || 1))}
-              margin="normal"
-              inputProps={{ min: 1 }}
+              required
+              label="URL"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Enter URL"
+              sx={{ mb: 2 }}
             />
-          )}
 
-          {/* Depth */}
-          <FormControl component="fieldset" margin="normal" fullWidth>
-            <FormLabel component="legend">Depth</FormLabel>
-            <RadioGroup
-              value={depthType}
-              onChange={(e) => setDepthType(e.target.value as typeof depthType)}
-            >
-              <FormControlLabel value="lastHours" control={<Radio />} label="Last 2 hours" />
-              <FormControlLabel
-                value="lastDays"
-                control={<Radio />}
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <span>Last</span>
-                    <TextField
-                      type="number"
-                      size="small"
-                      value={lastXDays}
-                      onChange={(e) => {
-                        setLastXDays(Math.max(1, parseInt(e.target.value) || 1));
-                        setDepthType("lastDays");
-                      }}
-                      inputProps={{ min: 1, style: { width: "60px" } }}
-                      sx={{ mx: 1 }}
-                    />
-                    <span>days</span>
-                  </Box>
-                }
-              />
-              <FormControlLabel value="dateRange" control={<Radio />} label="Date range" />
-            </RadioGroup>
-          </FormControl>
-
-          {/* Date Range Fields */}
-          {depthType === "dateRange" && (
-            <Box sx={{ mt: 2 }}>
-              <DateTimePicker
-                label="Start Date & Time"
-                value={dateRangeStart}
-                onChange={(newValue) => setDateRangeStart(newValue || new Date())}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    margin: "normal",
-                  },
+            {/* Quick Start Buttons */}
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setTaskType("ADHOC");
+                  setDepthType("lastHours");
+                  setPriority("Medium");
                 }}
-              />
-              <DateTimePicker
-                label="End Date & Time (Optional)"
-                value={dateRangeEnd}
-                onChange={(newValue) => setDateRangeEnd(newValue)}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    margin: "normal",
-                  },
+              >
+                Quick Start
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setTaskType("ADHOC");
+                  setDepthType("lastHours");
                 }}
-              />
+              >
+                One-time
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setTaskType("RECURRING");
+                  setDepthType("lastHours");
+                }}
+              >
+                Recurring (Timely)
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setTaskType("RECURRING");
+                  setDepthType("dateRange");
+                }}
+              >
+                Recurring (Complete)
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setTaskType("LIVESTREAM");
+                  setDepthType("dateRange");
+                }}
+              >
+                Livestream
+              </Button>
             </Box>
-          )}
+          </Box>
 
-          {/* Priority */}
-          <FormControl fullWidth margin="normal">
-            <FormLabel>Priority</FormLabel>
-            <Select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
-              <MenuItem value="Urgent">Urgent</MenuItem>
-              <MenuItem value="High">High</MenuItem>
-              <MenuItem value="Medium">Medium</MenuItem>
-              <MenuItem value="Low">Low</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Box 2: Task Type, Frequency, and Depth */}
+          <Box
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 1,
+              p: 2,
+              mb: 2,
+            }}
+          >
+            {/* Task Type */}
+            <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
+              <FormLabel component="legend">Task Type</FormLabel>
+              <RadioGroup
+                row
+                value={taskType}
+                onChange={(e) => setTaskType(e.target.value as typeof taskType)}
+              >
+                <FormControlLabel value="ADHOC" control={<Radio />} label="One-time" />
+                <FormControlLabel value="RECURRING" control={<Radio />} label="Recurring" />
+                <FormControlLabel value="LIVESTREAM" control={<Radio />} label="Livestream" />
+              </RadioGroup>
+            </FormControl>
 
-          {/* Country */}
-          <FormControl fullWidth margin="normal">
-            <FormLabel>Country (Optional)</FormLabel>
-            <Select value={country} onChange={(e) => setCountry(e.target.value)} displayEmpty>
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {COUNTRIES.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
+            {/* Frequency (only for Recurring) */}
+            {taskType === "RECURRING" && (
+              <TextField
+                fullWidth
+                type="number"
+                label="Frequency (hours)"
+                value={frequency}
+                onChange={(e) => setFrequency(Math.max(1, parseInt(e.target.value) || 1))}
+                inputProps={{ min: 1 }}
+                sx={{ mb: 2 }}
+              />
+            )}
+
+            {/* Cut-off time (only for Livestream) */}
+            {taskType === "LIVESTREAM" && (
+              <TextField
+                fullWidth
+                type="number"
+                label="Cut-off time (hours)"
+                value={cutOffTime}
+                onChange={(e) => setCutOffTime(Math.max(1, parseInt(e.target.value) || 1))}
+                inputProps={{ min: 1 }}
+              />
+            )}
+
+            {/* Depth (not shown for Livestream) */}
+            {taskType !== "LIVESTREAM" && (
+              <>
+                <FormControl component="fieldset" fullWidth>
+                  <FormLabel component="legend">Depth</FormLabel>
+                  <RadioGroup
+                    value={depthType}
+                    onChange={(e) => setDepthType(e.target.value as typeof depthType)}
+                  >
+                    <FormControlLabel value="lastHours" control={<Radio />} label="Last 2 hours" />
+                    <FormControlLabel
+                      value="lastDays"
+                      control={<Radio />}
+                      label={
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <span>Last X days</span>
+                        </Box>
+                      }
+                    />
+                    <FormControlLabel value="dateRange" control={<Radio />} label="Date range" />
+                  </RadioGroup>
+                </FormControl>
+
+                {/* Last X Days Input */}
+                {depthType === "lastDays" && (
+                  <TextField
+                    type="number"
+                    size="small"
+                    value={lastXDays}
+                    onChange={(e) => setLastXDays(Math.max(1, parseInt(e.target.value) || 1))}
+                    inputProps={{ min: 1 }}
+                    sx={{ ml: 4, mt: 1, width: "100px" }}
+                  />
+                )}
+
+                {/* Date Range Fields */}
+                {depthType === "dateRange" && (
+                  <Box sx={{ mt: 2, ml: 4 }}>
+                    <DateTimePicker
+                      label="Start Date & Time"
+                      value={dateRangeStart}
+                      onChange={(newValue) => setDateRangeStart(newValue || new Date())}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          margin: "normal",
+                        },
+                      }}
+                    />
+                    <DateTimePicker
+                      label="End Date & Time (Optional)"
+                      value={dateRangeEnd}
+                      onChange={(newValue) => setDateRangeEnd(newValue)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          margin: "normal",
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+
+          {/* Box 3: Priority and Country */}
+          <Box
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 1,
+              p: 2,
+              mb: 2,
+            }}
+          >
+            {/* Priority */}
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <FormLabel>Priority</FormLabel>
+              <Select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+                <MenuItem value="Urgent">Urgent</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="Low">Low</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Country */}
+            <FormControl fullWidth>
+              <FormLabel>Country (Optional)</FormLabel>
+              <Select value={country} onChange={(e) => setCountry(e.target.value)} displayEmpty>
+                <MenuItem value="">
+                  <em>None</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {COUNTRIES.map((c) => (
+                  <MenuItem key={c} value={c}>
+                    {c}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
 
           {/* Advanced Settings */}
-          <Accordion sx={{ mt: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Accordion
+            sx={{
+              mt: 2,
+              bgcolor: "inherit",
+              boxShadow: "none",
+              "&:before": {
+                display: "none",
+              },
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: "inherit",
+                minHeight: 48,
+                "&:hover": {
+                  bgcolor: "action.hover",
+                },
+              }}
+            >
               <Typography>Advanced Settings</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails
+              sx={{
+                bgcolor: "inherit",
+                pt: 2,
+              }}
+            >
               {/* Collection Period */}
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>

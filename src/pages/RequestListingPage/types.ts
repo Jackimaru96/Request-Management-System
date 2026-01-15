@@ -31,7 +31,8 @@ export interface Task {
   id: string;
   url: string;
   requestType: RequestType;
-  frequency: number; // in hours
+  frequency: number; // in hours, 0 for non-recurring tasks
+  cutOffTime?: number; // in hours, required for Livestream tasks
   depth: Depth;
   priority: Priority;
   country: string; // ISO country name

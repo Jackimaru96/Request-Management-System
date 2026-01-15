@@ -114,6 +114,7 @@ function RequestListingPage(): JSX.Element {
       url: "eco-sensors.worldwide/api",
       requestType: "Livestream",
       frequency: 0,
+      cutOffTime: 24,
       depth: {
         type: "dateRange",
         startDate: new Date("2026-01-01"),
@@ -264,7 +265,9 @@ function RequestListingPage(): JSX.Element {
 
         const colors = priorityColors[priority] || { bg: "#757575", text: "#fff" };
 
-        return <Chip label={priority} sx={{ bgcolor: colors.bg, color: colors.text }} />;
+        return (
+          <Chip label={priority} size="small" sx={{ bgcolor: colors.bg, color: colors.text }} />
+        );
       },
     },
     {
