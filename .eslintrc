@@ -1,0 +1,10 @@
+{
+  /**
+  Author: YL, 05/02/2025
+  this file is redundant and does not work with eslint v9.
+  please populate your lints to eslint.config.mjs instead
+  the only reason this file exists is because the CI/CD pipeline
+  checks for a .eslintrc file. I have already proposed
+  to the CI/CD team to remove this check
+  */
+}

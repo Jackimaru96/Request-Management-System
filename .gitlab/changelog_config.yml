@@ -1,0 +1,12 @@
+categories:
+  breaking: Breaking Change
+  added: Added
+  feature: Added
+  changed: Changed
+  refactor: Changed
+  fix: Fixed
+  removed: Removed
+  documentation: Updated Docs
+  performance: Optimizations
+  other: Other
+  chore: Other

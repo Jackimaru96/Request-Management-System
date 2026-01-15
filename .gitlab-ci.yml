@@ -1,0 +1,18 @@
+include:
+  - project: "nautilus-platform/templates/cicd-templates"
+    file: "/mfe-app/jobs.yml"
+    ref: v3.0.0 # can be branch name or ci tag or SHA, defaults to HEAD if not set
+
+variables:
+  CICD_TEMPLATE_REF: v3.0.0
+  NODE_VERSION: "22.13"
+  NODE_ENV: "staging"
+  UI_IMAGE_NAME: "${DOCKER_REGISTRY}/nautilus/example-application"
+  UI_PORTAINER_DEPLOY_WEBHOOK: ""
+  GITLAB_CHANGELOG_API: ""
+
+  # Available in CICD pipeline v3.0.0/main
+  # FOR: downloading test files for the testing CICD job to use, uncomment below. Refer to template README for usage.
+  # TEST_FILE_REMOTE_PATH: /test-files/<YOUR_GIT_REPO_NAME>
+  # TEST_FILE_OUTPUT_PATH: ./<PATH_TO_STORE_UR_TEST_FILES> # Relative path to your git repo
+  # TEST_FILE_ARCHIVE_NAME: test_files.tar.gz
