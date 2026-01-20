@@ -11,6 +11,7 @@ import { Task, TaskDisplay, ChangeStatus } from "./types";
 import { tasksToDisplay } from "./helpers";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
 import { useTasksQuery, useCreateTaskMutation } from "../../queries/tasks";
+import { priorityColors } from "../../utils/colours";
 
 function RequestListingPage(): JSX.Element {
   const [quickFilterSearch, setQuickFilterSearch] = useState("");
@@ -32,20 +33,34 @@ function RequestListingPage(): JSX.Element {
   // Calculate if there are pending changes
   const hasPendingChanges = useMemo(() => {
     return tasks.some(
-      (task: Task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
+      (task: Task) =>
+        task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED,
     );
   }, [tasks]);
 
   // Count pending changes
   const pendingChangesCount = useMemo(() => {
     return tasks.filter(
-      (task: Task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
+      (task: Task) =>
+        task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED,
     ).length;
   }, [tasks]);
 
   // Handle adding multiple tasks using React Query mutation
   const handleAddTasks = (
-    newTasks: Omit<Task, "id" | "createdTime" | "user" | "userGroup" | "version" | "changeStatus" | "latestEvent" | "collectionStatus" | "colEndTime" | "estimatedColDuration">[]
+    newTasks: Omit<
+      Task,
+      | "id"
+      | "createdTime"
+      | "user"
+      | "userGroup"
+      | "version"
+      | "changeStatus"
+      | "latestEvent"
+      | "collectionStatus"
+      | "colEndTime"
+      | "estimatedColDuration"
+    >[],
   ): void => {
     // Create each task using the mutation
     // The mutation will handle optimistic updates and add to cache
@@ -61,15 +76,14 @@ function RequestListingPage(): JSX.Element {
       width: 50,
       sortable: false,
       disableColumnMenu: true,
+      align: "center",
       renderCell: (params): JSX.Element | null => {
         const changeStatus = params.value as ChangeStatus | null;
 
         if (changeStatus === ChangeStatus.ADDED) {
           return (
             <Tooltip title="Will be added in next export" placement="right">
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <AddIcon sx={{ color: "success.main" }} />
-              </Box>
+              <AddIcon sx={{ color: "success.main", fontSize: "1rem" }} />
             </Tooltip>
           );
         }
@@ -77,9 +91,7 @@ function RequestListingPage(): JSX.Element {
         if (changeStatus === ChangeStatus.DELETED) {
           return (
             <Tooltip title="Will be deleted in next export" placement="right">
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <RemoveIcon sx={{ color: "error.main" }} />
-              </Box>
+              <RemoveIcon sx={{ color: "error.main", fontSize: "1rem" }} />
             </Tooltip>
           );
         }
@@ -87,9 +99,7 @@ function RequestListingPage(): JSX.Element {
         if (changeStatus === ChangeStatus.PENDING_UPLOAD) {
           return (
             <Tooltip title="Pending XML upload to W" placement="right">
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <FiberManualRecordIcon sx={{ color: "primary.main", fontSize: "12px" }} />
-              </Box>
+              <FiberManualRecordIcon sx={{ color: "primary.main", fontSize: "0.8rem" }} />
             </Tooltip>
           );
         }
@@ -128,17 +138,14 @@ function RequestListingPage(): JSX.Element {
       minWidth: 100,
       renderCell: (params): JSX.Element => {
         const priority = params.value as string;
-        const priorityColors: Record<string, { bg: string; text: string }> = {
-          Urgent: { bg: "#d32f2f", text: "#fff" },
-          High: { bg: "#ed6c02", text: "#fff" },
-          Medium: { bg: "#0288d1", text: "#fff" },
-          Low: { bg: "#2e7d32", text: "#fff" },
-        };
-
         const colors = priorityColors[priority] || { bg: "#757575", text: "#fff" };
 
         return (
-          <Chip label={priority} size="small" sx={{ bgcolor: colors.bg, color: colors.text }} />
+          <Chip
+            label={priority}
+            size="small"
+            sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: "bold" }}
+          />
         );
       },
     },

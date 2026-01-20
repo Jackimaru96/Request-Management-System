@@ -7,12 +7,13 @@ import {
   Priority,
   DepthType,
   deriveChangeStatus,
+  ChangeStatus,
 } from "../pages/RequestListingPage/types";
 
 // In-memory storage for tasks
 let taskStore: Task[] = [
+  // Tasks with LOCAL status (ADDED - show green +)
   {
-    // From TMS_Request
     id: "1",
     url: "api.example.com/v1/climate-data",
     requestType: RequestType.RECURRING,
@@ -24,7 +25,6 @@ let taskStore: Task[] = [
     recurringFreq: 3,
     country: "United States",
     depth: { type: DepthType.LAST_HOURS, hours: 2 },
-    // From latest TMSRequestEvent
     latestEvent: {
       _id: "evt-1",
       requestId: "1",
@@ -37,22 +37,10 @@ let taskStore: Task[] = [
       version: 1,
     },
     user: "user123",
-    // From Col_Request - no collection yet
     collectionStatus: undefined,
     colEndTime: undefined,
     estimatedColDuration: undefined,
-    // UI-derived
-    changeStatus: deriveChangeStatus({
-      _id: "evt-1",
-      requestId: "1",
-      eventType: EventType.CREATE,
-      status: EventStatus.LOCAL,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user123",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-15T10:00:00"),
-      version: 1,
-    }),
+    changeStatus: ChangeStatus.ADDED,
   },
   {
     id: "2",
@@ -62,7 +50,7 @@ let taskStore: Task[] = [
     contentType: "post",
     createdTime: new Date("2026-01-15T10:00:00"),
     userGroup: "analysts",
-    version: 1,
+    version: 2,
     recurringFreq: 3,
     country: "Australia",
     depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -75,24 +63,15 @@ let taskStore: Task[] = [
       user: "user123",
       userGroup: "analysts",
       createdTime: new Date("2026-01-15T10:00:00"),
-      version: 1,
+      version: 2,
     },
     user: "user123",
     collectionStatus: undefined,
     colEndTime: undefined,
     estimatedColDuration: undefined,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-2",
-      requestId: "2",
-      eventType: EventType.UPDATE,
-      status: EventStatus.LOCAL,
-      payload: JSON.stringify({ action: "update" }),
-      user: "user123",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-15T10:00:00"),
-      version: 1,
-    }),
+    changeStatus: ChangeStatus.ADDED,
   },
+  // Task with LOCAL DELETE status (DELETED - show red -)
   {
     id: "3",
     url: "weather-data.science/metrics",
@@ -101,7 +80,7 @@ let taskStore: Task[] = [
     contentType: "post",
     createdTime: new Date("2026-01-14T08:45:00"),
     userGroup: "analysts",
-    version: 1,
+    version: 2,
     recurringFreq: 2,
     country: "United Kingdom",
     depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -114,24 +93,15 @@ let taskStore: Task[] = [
       user: "user456",
       userGroup: "analysts",
       createdTime: new Date("2026-01-14T08:45:00"),
-      version: 1,
+      version: 2,
     },
     user: "user456",
     collectionStatus: CollectionStatus.COMPLETED,
     colEndTime: new Date("2026-01-14T09:30:00"),
     estimatedColDuration: 45,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-3",
-      requestId: "3",
-      eventType: EventType.DELETE,
-      status: EventStatus.LOCAL,
-      payload: JSON.stringify({ action: "delete" }),
-      user: "user456",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T08:45:00"),
-      version: 1,
-    }),
+    changeStatus: ChangeStatus.DELETED,
   },
+  // Tasks with PENDING_UPLOAD status (blue dot, no collection status)
   {
     id: "4",
     url: "global-climate.net/sensors",
@@ -156,20 +126,10 @@ let taskStore: Task[] = [
       version: 1,
     },
     user: "user789",
-    collectionStatus: CollectionStatus.PENDING_C,
+    collectionStatus: undefined,
     colEndTime: undefined,
-    estimatedColDuration: 30,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-4",
-      requestId: "4",
-      eventType: EventType.CREATE,
-      status: EventStatus.PENDING_UPLOAD,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user789",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T10:45:00"),
-      version: 1,
-    }),
+    estimatedColDuration: undefined,
+    changeStatus: ChangeStatus.PENDING_UPLOAD,
   },
   {
     id: "5",
@@ -194,20 +154,10 @@ let taskStore: Task[] = [
       version: 1,
     },
     user: "user123",
-    collectionStatus: CollectionStatus.COLLECTING,
+    collectionStatus: undefined,
     colEndTime: undefined,
-    estimatedColDuration: 120,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-5",
-      requestId: "5",
-      eventType: EventType.CREATE,
-      status: EventStatus.PENDING_UPLOAD,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user123",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T09:15:00"),
-      version: 1,
-    }),
+    estimatedColDuration: undefined,
+    changeStatus: ChangeStatus.PENDING_UPLOAD,
   },
   {
     id: "6",
@@ -233,20 +183,10 @@ let taskStore: Task[] = [
       version: 1,
     },
     user: "user456",
-    collectionStatus: CollectionStatus.COMPLETED,
-    colEndTime: new Date("2026-01-14T10:30:00"),
-    estimatedColDuration: 180,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-6",
-      requestId: "6",
-      eventType: EventType.CREATE,
-      status: EventStatus.PENDING_UPLOAD,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user456",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T07:20:00"),
-      version: 1,
-    }),
+    collectionStatus: undefined,
+    colEndTime: undefined,
+    estimatedColDuration: undefined,
+    changeStatus: ChangeStatus.PENDING_UPLOAD,
   },
   {
     id: "7",
@@ -272,20 +212,10 @@ let taskStore: Task[] = [
       version: 1,
     },
     user: "user789",
-    collectionStatus: CollectionStatus.SUSPENDED,
-    colEndTime: new Date("2026-01-14T11:15:00"),
-    estimatedColDuration: 60,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-7",
-      requestId: "7",
-      eventType: EventType.CREATE,
-      status: EventStatus.PENDING_UPLOAD,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user789",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T10:00:00"),
-      version: 1,
-    }),
+    collectionStatus: undefined,
+    colEndTime: undefined,
+    estimatedColDuration: undefined,
+    changeStatus: ChangeStatus.PENDING_UPLOAD,
   },
   {
     id: "8",
@@ -315,21 +245,12 @@ let taskStore: Task[] = [
       version: 1,
     },
     user: "user123",
-    collectionStatus: CollectionStatus.ERROR,
-    colEndTime: new Date("2026-01-14T06:45:00"),
-    estimatedColDuration: 240,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-8",
-      requestId: "8",
-      eventType: EventType.CREATE,
-      status: EventStatus.PENDING_UPLOAD,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user123",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T05:30:00"),
-      version: 1,
-    }),
+    collectionStatus: undefined,
+    colEndTime: undefined,
+    estimatedColDuration: undefined,
+    changeStatus: ChangeStatus.PENDING_UPLOAD,
   },
+  // Task with UPLOADED status (has collection status)
   {
     id: "9",
     url: "data-hub.research.org/endpoints",
@@ -357,19 +278,9 @@ let taskStore: Task[] = [
     collectionStatus: CollectionStatus.COMPLETED,
     colEndTime: new Date("2026-01-14T06:30:00"),
     estimatedColDuration: 120,
-    changeStatus: deriveChangeStatus({
-      _id: "evt-9",
-      requestId: "9",
-      eventType: EventType.CREATE,
-      status: EventStatus.UPLOADED,
-      payload: JSON.stringify({ action: "create" }),
-      user: "user456",
-      userGroup: "analysts",
-      createdTime: new Date("2026-01-14T04:15:00"),
-      version: 1,
-      uploadedTime: new Date("2026-01-14T04:20:00"),
-    }),
+    changeStatus: ChangeStatus.UPLOADED,
   },
+  // Task with no event (UPLOADED in past, now stable)
   {
     id: "10",
     url: "atmospheric-data.org/readings",
@@ -382,12 +293,12 @@ let taskStore: Task[] = [
     recurringFreq: 8,
     country: "Brazil",
     depth: { type: DepthType.LAST_DAYS, days: 4 },
-    latestEvent: undefined, // No event yet
+    latestEvent: undefined,
     user: "user789",
     collectionStatus: CollectionStatus.COMPLETED,
     colEndTime: new Date("2026-01-14T12:00:00"),
     estimatedColDuration: 360,
-    changeStatus: deriveChangeStatus(undefined),
+    changeStatus: null,
   },
 ];
 
@@ -460,7 +371,7 @@ export async function createTask(
     | "collectionStatus"
     | "colEndTime"
     | "estimatedColDuration"
-  >
+  >,
 ): Promise<Task> {
   await simulateNetworkLatency();
 
@@ -525,7 +436,7 @@ export async function updateTask(
       | "colEndTime"
       | "estimatedColDuration"
     >
-  >
+  >,
 ): Promise<Task> {
   await simulateNetworkLatency();
 

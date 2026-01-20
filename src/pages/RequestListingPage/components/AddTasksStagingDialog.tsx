@@ -26,6 +26,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { Task } from "../types";
 import { formatFrequency, formatDepth, getPriorityLabel, toCamelCase } from "../helpers";
 import AddTaskDialog from "./AddTaskDialog";
+import { priorityColors } from "../../../utils/colours";
 
 interface AddTasksStagingDialogProps {
   open: boolean;
@@ -234,12 +235,6 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                     <TableBody>
                       {stagedTasks.map((task, index) => {
                         const priorityLabel = getPriorityLabel(task.priority);
-                        const priorityColors: Record<string, { bg: string; text: string }> = {
-                          Urgent: { bg: "#d32f2f", text: "#fff" },
-                          High: { bg: "#ed6c02", text: "#fff" },
-                          Medium: { bg: "#0288d1", text: "#fff" },
-                          Low: { bg: "#2e7d32", text: "#fff" },
-                        };
 
                         const colors = priorityColors[priorityLabel] || {
                           bg: "#757575",
@@ -258,7 +253,7 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                               <Chip
                                 label={priorityLabel}
                                 size="small"
-                                sx={{ bgcolor: colors.bg, color: colors.text }}
+                                sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: "bold" }}
                               />
                             </TableCell>
                             <TableCell>{task.country || "-"}</TableCell>
