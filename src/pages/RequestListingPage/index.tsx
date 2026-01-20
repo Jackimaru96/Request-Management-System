@@ -7,17 +7,10 @@ import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { NdsDataGrid, GridColDef, type NdsBaseSelectOption } from "@nautilus/nds-react";
-import {
-  Task,
-  TaskDisplay,
-  ChangeStatus,
-  RequestType,
-  RequestStatus,
-  Priority,
-  DepthType,
-} from "./types";
+import { Task, TaskDisplay, ChangeStatus } from "./types";
 import { tasksToDisplay } from "./helpers";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
+import { useTasksQuery, useCreateTaskMutation } from "../../queries/tasks";
 
 function RequestListingPage(): JSX.Element {
   const [quickFilterSearch, setQuickFilterSearch] = useState("");
@@ -29,191 +22,9 @@ function RequestListingPage(): JSX.Element {
   });
   const [addTasksDialogOpen, setAddTasksDialogOpen] = useState(false);
 
-  // Task data with proper types - use state to allow adding new tasks
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      url: "api.example.com/v1/climate-data",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 3,
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      priority: Priority.URGENT,
-      country: "United States",
-      status: RequestStatus.CREATED,
-      createdTime: new Date("2026-01-15T10:00:00"),
-      user: "user123",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.ADDED,
-    },
-    {
-      id: "2",
-      url: "metrics-api.cloud/collection",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 3,
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      priority: Priority.HIGH,
-      country: "Australia",
-      status: RequestStatus.CREATED,
-      createdTime: new Date("2026-01-15T10:00:00"),
-      user: "user123",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.ADDED,
-    },
-    {
-      id: "3",
-      url: "weather-data.science/metrics",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 2,
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      priority: Priority.MEDIUM,
-      country: "United Kingdom",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T08:45:00"),
-      user: "user456",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.DELETED,
-    },
-    {
-      id: "4",
-      url: "global-climate.net/sensors",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 1,
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      priority: Priority.URGENT,
-      country: "Singapore",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T10:45:00"),
-      user: "user789",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
-    },
-    {
-      id: "5",
-      url: "climate-monitor.global/api/temp",
-      requestType: RequestType.ADHOC,
-      depth: { type: DepthType.LAST_DAYS, days: 2 },
-      priority: Priority.HIGH,
-      country: "Germany",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T09:15:00"),
-      user: "user123",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
-    },
-    {
-      id: "6",
-      url: "environment-tracker.io/data",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 4,
-      depth: { type: DepthType.LAST_DAYS, days: 3 },
-      priority: Priority.HIGH,
-      country: "Japan",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T07:20:00"),
-      user: "user456",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
-    },
-    {
-      id: "7",
-      url: "temperature-monitor.io/latest",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 2,
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      priority: Priority.HIGH,
-      country: "France",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T10:00:00"),
-      user: "user789",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
-    },
-    {
-      id: "8",
-      url: "eco-sensors.worldwide/api",
-      requestType: RequestType.LIVESTREAM,
-      cutOffTime: new Date("2026-01-31T23:59:59"),
-      depth: {
-        type: DepthType.DATE_RANGE,
-        startDate: new Date("2026-01-01"),
-        endDate: new Date("2026-01-31"),
-      },
-      priority: Priority.MEDIUM,
-      country: "Canada",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T05:30:00"),
-      user: "user123",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
-    },
-    {
-      id: "9",
-      url: "data-hub.research.org/endpoints",
-      requestType: RequestType.ADHOC,
-      depth: { type: DepthType.LAST_DAYS, days: 2 },
-      priority: Priority.MEDIUM,
-      country: "India",
-      status: RequestStatus.DOWNLOADED,
-      createdTime: new Date("2026-01-14T04:15:00"),
-      user: "user456",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: ChangeStatus.UPLOADED,
-    },
-    {
-      id: "10",
-      url: "atmospheric-data.org/readings",
-      requestType: RequestType.RECURRING,
-      recurringFreq: 8,
-      depth: { type: DepthType.LAST_DAYS, days: 4 },
-      priority: Priority.LOW,
-      country: "Brazil",
-      status: RequestStatus.APPROVED,
-      createdTime: new Date("2026-01-14T06:00:00"),
-      user: "user789",
-      userGroup: "analysts",
-      contentType: "post",
-      mediaPlatform: "web",
-      mediaType: "social",
-      estimatedColDuration: 60,
-      changeStatus: null,
-    },
-  ]);
+  // Use React Query to fetch tasks
+  const { data: tasks = [] } = useTasksQuery();
+  const createTaskMutation = useCreateTaskMutation();
 
   // Convert tasks to display format
   const rows: TaskDisplay[] = useMemo(() => tasksToDisplay(tasks), [tasks]);
@@ -221,36 +32,26 @@ function RequestListingPage(): JSX.Element {
   // Calculate if there are pending changes
   const hasPendingChanges = useMemo(() => {
     return tasks.some(
-      (task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
+      (task: Task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
     );
   }, [tasks]);
 
   // Count pending changes
   const pendingChangesCount = useMemo(() => {
     return tasks.filter(
-      (task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
+      (task: Task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
     ).length;
   }, [tasks]);
 
-  // Handle adding multiple tasks
+  // Handle adding multiple tasks using React Query mutation
   const handleAddTasks = (
-    newTasks: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">[]
+    newTasks: Omit<Task, "id" | "createdTime" | "user" | "userGroup" | "version" | "changeStatus" | "latestEvent" | "collectionStatus" | "colEndTime" | "estimatedColDuration">[]
   ): void => {
-    const tasksToAdd: Task[] = newTasks.map((newTask, index) => ({
-      ...newTask,
-      id: `temp-${Date.now()}-${index}`,
-      status: RequestStatus.CREATED,
-      createdTime: new Date(),
-      user: "current_user", // TODO: Get from auth context
-      userGroup: "default_group", // TODO: Get from auth context
-      changeStatus: ChangeStatus.ADDED, // Mark as newly added (shows green plus icon)
-    }));
-
-    // Add all new tasks to the beginning of the list
-    setTasks([...tasksToAdd, ...tasks]);
-
-    // TODO: Make API call to persist the tasks to the backend
-    // After API success, update the tasks with real IDs from the server
+    // Create each task using the mutation
+    // The mutation will handle optimistic updates and add to cache
+    newTasks.forEach((newTask) => {
+      createTaskMutation.mutate(newTask);
+    });
   };
 
   const columns: GridColDef[] = [

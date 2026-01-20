@@ -24,13 +24,15 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { Task } from "../types";
-import { formatFrequency, formatDepth, getPriorityLabel } from "../helpers";
+import { formatFrequency, formatDepth, getPriorityLabel, toCamelCase } from "../helpers";
 import AddTaskDialog from "./AddTaskDialog";
 
 interface AddTasksStagingDialogProps {
   open: boolean;
   onClose: () => void;
-  onAddTasks: (tasks: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">[]) => void;
+  onAddTasks: (
+    tasks: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">[],
+  ) => void;
 }
 
 function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
@@ -146,7 +148,9 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
   return (
     <>
       <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <DialogTitle
+          sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconButton onClick={handleClose} size="small">
               <ArrowBackIcon />
@@ -194,7 +198,15 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                   Browse Files
                   <input type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleChange} />
                 </Button>
-                <Box sx={{ mt: 2, width: "100%", borderTop: "1px solid", borderColor: "divider", pt: 2 }}>
+                <Box
+                  sx={{
+                    mt: 2,
+                    width: "100%",
+                    borderTop: "1px solid",
+                    borderColor: "divider",
+                    pt: 2,
+                  }}
+                >
                   <Button fullWidth variant="text" onClick={handleAddManually}>
                     Add a Task Manually
                   </Button>
@@ -229,13 +241,18 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                           Low: { bg: "#2e7d32", text: "#fff" },
                         };
 
-                        const colors = priorityColors[priorityLabel] || { bg: "#757575", text: "#fff" };
+                        const colors = priorityColors[priorityLabel] || {
+                          bg: "#757575",
+                          text: "#fff",
+                        };
 
                         return (
                           <TableRow key={index}>
                             <TableCell>{task.url}</TableCell>
-                            <TableCell>{task.requestType}</TableCell>
-                            <TableCell>{formatFrequency(task.requestType, task.recurringFreq)}</TableCell>
+                            <TableCell>{toCamelCase(task.requestType)}</TableCell>
+                            <TableCell>
+                              {formatFrequency(task.requestType, task.recurringFreq)}
+                            </TableCell>
                             <TableCell>{formatDepth(task.depth)}</TableCell>
                             <TableCell>
                               <Chip

@@ -1,6 +1,28 @@
 import { Task, TaskDisplay, Depth, PRIORITY_LABELS, Priority, RequestType, DepthType } from "./types";
 
 /**
+ * Convert text to Camel Case for display
+ * Examples: "ADHOC" -> "Adhoc", "PENDING-C" -> "Pending-C", "ERROR-COUNT" -> "Error-Count"
+ */
+export function toCamelCase(text: string): string {
+  if (!text) {
+    return text;
+  }
+
+  // Split by hyphen or underscore
+  const parts = text.split(/[-_]/);
+
+  return parts
+    .map((part) => {
+      if (!part) {
+        return part;
+      }
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join("-");
+}
+
+/**
  * Format frequency for display
  */
 export function formatFrequency(taskType: RequestType, frequency?: number): string {
@@ -79,13 +101,13 @@ export function taskToDisplay(task: Task): TaskDisplay {
     id: task.id,
     changeStatus: task.changeStatus,
     url: task.url,
-    taskType: task.requestType,
+    taskType: toCamelCase(task.requestType), // Convert to Camel Case
     frequency: formatFrequency(task.requestType, task.recurringFreq),
     depth: formatDepth(task.depth),
     priority: getPriorityLabel(task.priority),
     country: task.country || "-",
-    status: task.status,
-    lastCollected: task.createdTime ? formatDate(task.createdTime) : "",
+    status: task.collectionStatus ? toCamelCase(task.collectionStatus) : "-", // Convert to Camel Case
+    lastCollected: task.colEndTime ? formatDate(task.colEndTime) : "", // From Col_Request.colEndTime
   };
 }
 

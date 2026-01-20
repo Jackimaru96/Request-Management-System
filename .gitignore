@@ -1,3 +1,6 @@
 node_modules
 dist
 megalinter-reports
+.claude/
+ERD.png
+tasking_indexes_complete.md

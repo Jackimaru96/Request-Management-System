@@ -1,0 +1,610 @@
+import {
+  Task,
+  EventType,
+  EventStatus,
+  CollectionStatus,
+  RequestType,
+  Priority,
+  DepthType,
+  deriveChangeStatus,
+} from "../pages/RequestListingPage/types";
+
+// In-memory storage for tasks
+let taskStore: Task[] = [
+  {
+    // From TMS_Request
+    id: "1",
+    url: "api.example.com/v1/climate-data",
+    requestType: RequestType.RECURRING,
+    priority: Priority.URGENT,
+    contentType: "post",
+    createdTime: new Date("2026-01-15T10:00:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 3,
+    country: "United States",
+    depth: { type: DepthType.LAST_HOURS, hours: 2 },
+    // From latest TMSRequestEvent
+    latestEvent: {
+      _id: "evt-1",
+      requestId: "1",
+      eventType: EventType.CREATE,
+      status: EventStatus.LOCAL,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-15T10:00:00"),
+      version: 1,
+    },
+    user: "user123",
+    // From Col_Request - no collection yet
+    collectionStatus: undefined,
+    colEndTime: undefined,
+    estimatedColDuration: undefined,
+    // UI-derived
+    changeStatus: deriveChangeStatus({
+      _id: "evt-1",
+      requestId: "1",
+      eventType: EventType.CREATE,
+      status: EventStatus.LOCAL,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-15T10:00:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "2",
+    url: "metrics-api.cloud/collection",
+    requestType: RequestType.RECURRING,
+    priority: Priority.HIGH,
+    contentType: "post",
+    createdTime: new Date("2026-01-15T10:00:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 3,
+    country: "Australia",
+    depth: { type: DepthType.LAST_HOURS, hours: 2 },
+    latestEvent: {
+      _id: "evt-2",
+      requestId: "2",
+      eventType: EventType.UPDATE,
+      status: EventStatus.LOCAL,
+      payload: JSON.stringify({ action: "update" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-15T10:00:00"),
+      version: 1,
+    },
+    user: "user123",
+    collectionStatus: undefined,
+    colEndTime: undefined,
+    estimatedColDuration: undefined,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-2",
+      requestId: "2",
+      eventType: EventType.UPDATE,
+      status: EventStatus.LOCAL,
+      payload: JSON.stringify({ action: "update" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-15T10:00:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "3",
+    url: "weather-data.science/metrics",
+    requestType: RequestType.RECURRING,
+    priority: Priority.MEDIUM,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T08:45:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 2,
+    country: "United Kingdom",
+    depth: { type: DepthType.LAST_HOURS, hours: 2 },
+    latestEvent: {
+      _id: "evt-3",
+      requestId: "3",
+      eventType: EventType.DELETE,
+      status: EventStatus.LOCAL,
+      payload: JSON.stringify({ action: "delete" }),
+      user: "user456",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T08:45:00"),
+      version: 1,
+    },
+    user: "user456",
+    collectionStatus: CollectionStatus.COMPLETED,
+    colEndTime: new Date("2026-01-14T09:30:00"),
+    estimatedColDuration: 45,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-3",
+      requestId: "3",
+      eventType: EventType.DELETE,
+      status: EventStatus.LOCAL,
+      payload: JSON.stringify({ action: "delete" }),
+      user: "user456",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T08:45:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "4",
+    url: "global-climate.net/sensors",
+    requestType: RequestType.RECURRING,
+    priority: Priority.URGENT,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T10:45:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 1,
+    country: "Singapore",
+    depth: { type: DepthType.LAST_HOURS, hours: 2 },
+    latestEvent: {
+      _id: "evt-4",
+      requestId: "4",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user789",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T10:45:00"),
+      version: 1,
+    },
+    user: "user789",
+    collectionStatus: CollectionStatus.PENDING_C,
+    colEndTime: undefined,
+    estimatedColDuration: 30,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-4",
+      requestId: "4",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user789",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T10:45:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "5",
+    url: "climate-monitor.global/api/temp",
+    requestType: RequestType.ADHOC,
+    priority: Priority.HIGH,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T09:15:00"),
+    userGroup: "analysts",
+    version: 1,
+    country: "Germany",
+    depth: { type: DepthType.LAST_DAYS, days: 2 },
+    latestEvent: {
+      _id: "evt-5",
+      requestId: "5",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T09:15:00"),
+      version: 1,
+    },
+    user: "user123",
+    collectionStatus: CollectionStatus.COLLECTING,
+    colEndTime: undefined,
+    estimatedColDuration: 120,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-5",
+      requestId: "5",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T09:15:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "6",
+    url: "environment-tracker.io/data",
+    requestType: RequestType.RECURRING,
+    priority: Priority.HIGH,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T07:20:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 4,
+    country: "Japan",
+    depth: { type: DepthType.LAST_DAYS, days: 3 },
+    latestEvent: {
+      _id: "evt-6",
+      requestId: "6",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user456",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T07:20:00"),
+      version: 1,
+    },
+    user: "user456",
+    collectionStatus: CollectionStatus.COMPLETED,
+    colEndTime: new Date("2026-01-14T10:30:00"),
+    estimatedColDuration: 180,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-6",
+      requestId: "6",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user456",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T07:20:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "7",
+    url: "temperature-monitor.io/latest",
+    requestType: RequestType.RECURRING,
+    priority: Priority.HIGH,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T10:00:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 2,
+    country: "France",
+    depth: { type: DepthType.LAST_HOURS, hours: 2 },
+    latestEvent: {
+      _id: "evt-7",
+      requestId: "7",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user789",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T10:00:00"),
+      version: 1,
+    },
+    user: "user789",
+    collectionStatus: CollectionStatus.SUSPENDED,
+    colEndTime: new Date("2026-01-14T11:15:00"),
+    estimatedColDuration: 60,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-7",
+      requestId: "7",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user789",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T10:00:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "8",
+    url: "eco-sensors.worldwide/api",
+    requestType: RequestType.LIVESTREAM,
+    priority: Priority.MEDIUM,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T05:30:00"),
+    userGroup: "analysts",
+    version: 1,
+    cutOffTime: new Date("2026-01-31T23:59:59"),
+    country: "Canada",
+    depth: {
+      type: DepthType.DATE_RANGE,
+      startDate: new Date("2026-01-01"),
+      endDate: new Date("2026-01-31"),
+    },
+    latestEvent: {
+      _id: "evt-8",
+      requestId: "8",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T05:30:00"),
+      version: 1,
+    },
+    user: "user123",
+    collectionStatus: CollectionStatus.ERROR,
+    colEndTime: new Date("2026-01-14T06:45:00"),
+    estimatedColDuration: 240,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-8",
+      requestId: "8",
+      eventType: EventType.CREATE,
+      status: EventStatus.PENDING_UPLOAD,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user123",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T05:30:00"),
+      version: 1,
+    }),
+  },
+  {
+    id: "9",
+    url: "data-hub.research.org/endpoints",
+    requestType: RequestType.ADHOC,
+    priority: Priority.MEDIUM,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T04:15:00"),
+    userGroup: "analysts",
+    version: 1,
+    country: "India",
+    depth: { type: DepthType.LAST_DAYS, days: 2 },
+    latestEvent: {
+      _id: "evt-9",
+      requestId: "9",
+      eventType: EventType.CREATE,
+      status: EventStatus.UPLOADED,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user456",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T04:15:00"),
+      version: 1,
+      uploadedTime: new Date("2026-01-14T04:20:00"),
+    },
+    user: "user456",
+    collectionStatus: CollectionStatus.COMPLETED,
+    colEndTime: new Date("2026-01-14T06:30:00"),
+    estimatedColDuration: 120,
+    changeStatus: deriveChangeStatus({
+      _id: "evt-9",
+      requestId: "9",
+      eventType: EventType.CREATE,
+      status: EventStatus.UPLOADED,
+      payload: JSON.stringify({ action: "create" }),
+      user: "user456",
+      userGroup: "analysts",
+      createdTime: new Date("2026-01-14T04:15:00"),
+      version: 1,
+      uploadedTime: new Date("2026-01-14T04:20:00"),
+    }),
+  },
+  {
+    id: "10",
+    url: "atmospheric-data.org/readings",
+    requestType: RequestType.RECURRING,
+    priority: Priority.LOW,
+    contentType: "post",
+    createdTime: new Date("2026-01-14T06:00:00"),
+    userGroup: "analysts",
+    version: 1,
+    recurringFreq: 8,
+    country: "Brazil",
+    depth: { type: DepthType.LAST_DAYS, days: 4 },
+    latestEvent: undefined, // No event yet
+    user: "user789",
+    collectionStatus: CollectionStatus.COMPLETED,
+    colEndTime: new Date("2026-01-14T12:00:00"),
+    estimatedColDuration: 360,
+    changeStatus: deriveChangeStatus(undefined),
+  },
+];
+
+// ID counter for generating new task IDs
+let idCounter = 11;
+
+// Simulate network latency
+function simulateNetworkLatency(): Promise<void> {
+  const delay = Math.floor(Math.random() * 400) + 200; // 200-600ms
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+/**
+ * Revive dates from JSON serialization
+ */
+function reviveDates(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (typeof obj === "string") {
+    // Check if it's an ISO date string
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+    if (isoDateRegex.test(obj)) {
+      return new Date(obj);
+    }
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(reviveDates);
+  }
+
+  if (typeof obj === "object") {
+    const result: Record<string, unknown> = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        result[key] = reviveDates((obj as Record<string, unknown>)[key]);
+      }
+    }
+    return result;
+  }
+
+  return obj;
+}
+
+/**
+ * List all tasks
+ */
+export async function listTasks(): Promise<Task[]> {
+  await simulateNetworkLatency();
+  // Return a deep copy to prevent direct mutation, and revive dates
+  const serialized = JSON.parse(JSON.stringify(taskStore));
+  return reviveDates(serialized) as Task[];
+}
+
+/**
+ * Create a new task
+ */
+export async function createTask(
+  payload: Omit<
+    Task,
+    | "id"
+    | "createdTime"
+    | "user"
+    | "userGroup"
+    | "version"
+    | "changeStatus"
+    | "latestEvent"
+    | "collectionStatus"
+    | "colEndTime"
+    | "estimatedColDuration"
+  >
+): Promise<Task> {
+  await simulateNetworkLatency();
+
+  const currentTime = new Date();
+  const currentUser = "current_user"; // TODO: Get from auth context
+  const currentUserGroup = "default_group"; // TODO: Get from auth context
+  const taskId = `task-${idCounter++}`;
+  const eventId = `evt-${taskId}`;
+
+  // Create the event for this new task
+  const event = {
+    _id: eventId,
+    requestId: taskId,
+    eventType: EventType.CREATE,
+    status: EventStatus.LOCAL,
+    payload: JSON.stringify({ action: "create", data: payload }),
+    user: currentUser,
+    userGroup: currentUserGroup,
+    createdTime: currentTime,
+    version: 1,
+  };
+
+  const newTask: Task = {
+    ...payload,
+    id: taskId,
+    createdTime: currentTime,
+    user: currentUser,
+    userGroup: currentUserGroup,
+    version: 1,
+    // From latest TMSRequestEvent
+    latestEvent: event,
+    // From Col_Request - no collection yet for new tasks
+    collectionStatus: undefined,
+    colEndTime: undefined,
+    estimatedColDuration: undefined,
+    // UI-derived from the event
+    changeStatus: deriveChangeStatus(event), // Will be ChangeStatus.ADDED
+  };
+
+  // Add to store
+  taskStore = [newTask, ...taskStore];
+
+  return reviveDates(JSON.parse(JSON.stringify(newTask))) as Task;
+}
+
+/**
+ * Update an existing task (creates a new event)
+ */
+export async function updateTask(
+  id: string,
+  patch: Partial<
+    Omit<
+      Task,
+      | "id"
+      | "createdTime"
+      | "user"
+      | "userGroup"
+      | "version"
+      | "changeStatus"
+      | "latestEvent"
+      | "collectionStatus"
+      | "colEndTime"
+      | "estimatedColDuration"
+    >
+  >
+): Promise<Task> {
+  await simulateNetworkLatency();
+
+  const taskIndex = taskStore.findIndex((task) => task.id === id);
+  if (taskIndex === -1) {
+    throw new Error(`Task with id ${id} not found`);
+  }
+
+  const currentTime = new Date();
+  const currentUser = "current_user"; // TODO: Get from auth context
+  const currentUserGroup = "default_group"; // TODO: Get from auth context
+  const eventId = `evt-update-${id}-${Date.now()}`;
+
+  const existingTask = taskStore[taskIndex];
+
+  // Create update event
+  const event = {
+    _id: eventId,
+    requestId: id,
+    eventType: EventType.UPDATE,
+    status: EventStatus.LOCAL,
+    payload: JSON.stringify({ action: "update", data: patch }),
+    user: currentUser,
+    userGroup: currentUserGroup,
+    createdTime: currentTime,
+    version: existingTask.version + 1,
+  };
+
+  const updatedTask: Task = {
+    ...existingTask,
+    ...patch,
+    version: existingTask.version + 1,
+    latestEvent: event,
+    changeStatus: deriveChangeStatus(event),
+  };
+
+  taskStore[taskIndex] = updatedTask;
+
+  return reviveDates(JSON.parse(JSON.stringify(updatedTask))) as Task;
+}
+
+/**
+ * Delete a task (creates a DELETE event)
+ */
+export async function deleteTask(id: string): Promise<void> {
+  await simulateNetworkLatency();
+
+  const taskIndex = taskStore.findIndex((task) => task.id === id);
+  if (taskIndex === -1) {
+    throw new Error(`Task with id ${id} not found`);
+  }
+
+  const currentTime = new Date();
+  const currentUser = "current_user"; // TODO: Get from auth context
+  const currentUserGroup = "default_group"; // TODO: Get from auth context
+  const eventId = `evt-delete-${id}-${Date.now()}`;
+
+  const existingTask = taskStore[taskIndex];
+
+  // Create delete event
+  const event = {
+    _id: eventId,
+    requestId: id,
+    eventType: EventType.DELETE,
+    status: EventStatus.LOCAL,
+    payload: JSON.stringify({ action: "delete" }),
+    user: currentUser,
+    userGroup: currentUserGroup,
+    createdTime: currentTime,
+    version: existingTask.version + 1,
+  };
+
+  // Update task with delete event (mark as deleted, don't remove from store)
+  const updatedTask: Task = {
+    ...existingTask,
+    version: existingTask.version + 1,
+    latestEvent: event,
+    changeStatus: deriveChangeStatus(event), // Will be ChangeStatus.DELETED
+  };
+
+  taskStore[taskIndex] = updatedTask;
+}
