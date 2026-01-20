@@ -1,5 +1,5 @@
 import { JSX, useState, useMemo } from "react";
-import { Box, Chip } from "@mui/material";
+import { Box, Chip, Tooltip } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -7,10 +7,17 @@ import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { NdsDataGrid, GridColDef, type NdsBaseSelectOption } from "@nautilus/nds-react";
-import { Task, TaskDisplay, ChangeStatus } from "./types";
+import {
+  Task,
+  TaskDisplay,
+  ChangeStatus,
+  RequestType,
+  RequestStatus,
+  Priority,
+  DepthType,
+} from "./types";
 import { tasksToDisplay } from "./helpers";
-import AddTasksDialog from "./components/AddTasksDialog";
-import AddTaskDialog from "./components/AddTaskDialog";
+import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
 
 function RequestListingPage(): JSX.Element {
   const [quickFilterSearch, setQuickFilterSearch] = useState("");
@@ -21,133 +28,189 @@ function RequestListingPage(): JSX.Element {
     page: 0,
   });
   const [addTasksDialogOpen, setAddTasksDialogOpen] = useState(false);
-  const [addTaskDialogOpen, setAddTaskDialogOpen] = useState(false);
 
   // Task data with proper types - use state to allow adding new tasks
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
       url: "api.example.com/v1/climate-data",
-      requestType: "Recurring",
-      frequency: 3,
-      depth: { type: "lastHours", hours: 2 },
-      priority: "Urgent",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 3,
+      depth: { type: DepthType.LAST_HOURS, hours: 2 },
+      priority: Priority.URGENT,
       country: "United States",
-      status: "",
-      lastCollected: null,
-      changeStatus: "added",
+      status: RequestStatus.CREATED,
+      createdTime: new Date("2026-01-15T10:00:00"),
+      user: "user123",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.ADDED,
     },
     {
       id: "2",
       url: "metrics-api.cloud/collection",
-      requestType: "Recurring",
-      frequency: 3,
-      depth: { type: "lastHours", hours: 2 },
-      priority: "High",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 3,
+      depth: { type: DepthType.LAST_HOURS, hours: 2 },
+      priority: Priority.HIGH,
       country: "Australia",
-      status: "",
-      lastCollected: null,
-      changeStatus: "added",
+      status: RequestStatus.CREATED,
+      createdTime: new Date("2026-01-15T10:00:00"),
+      user: "user123",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.ADDED,
     },
     {
       id: "3",
       url: "weather-data.science/metrics",
-      requestType: "Recurring",
-      frequency: 2,
-      depth: { type: "lastHours", hours: 2 },
-      priority: "Medium",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 2,
+      depth: { type: DepthType.LAST_HOURS, hours: 2 },
+      priority: Priority.MEDIUM,
       country: "United Kingdom",
-      status: "Collected",
-      lastCollected: new Date("2026-01-14T08:45:00"),
-      changeStatus: "deleted",
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T08:45:00"),
+      user: "user456",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.DELETED,
     },
     {
       id: "4",
       url: "global-climate.net/sensors",
-      requestType: "Recurring",
-      frequency: 1,
-      depth: { type: "lastHours", hours: 2 },
-      priority: "Urgent",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 1,
+      depth: { type: DepthType.LAST_HOURS, hours: 2 },
+      priority: Priority.URGENT,
       country: "Singapore",
-      status: "Collecting",
-      lastCollected: new Date("2026-01-14T10:45:00"),
-      changeStatus: "confirmed",
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T10:45:00"),
+      user: "user789",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
     {
       id: "5",
       url: "climate-monitor.global/api/temp",
-      requestType: "Ad-Hoc",
-      frequency: 0,
-      depth: { type: "lastDays", days: 2 },
-      priority: "High",
+      requestType: RequestType.ADHOC,
+      depth: { type: DepthType.LAST_DAYS, days: 2 },
+      priority: Priority.HIGH,
       country: "Germany",
-      status: "Collecting",
-      lastCollected: new Date("2026-01-14T09:15:00"),
-      changeStatus: "confirmed",
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T09:15:00"),
+      user: "user123",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
     {
       id: "6",
       url: "environment-tracker.io/data",
-      requestType: "Recurring",
-      frequency: 4,
-      depth: { type: "lastDays", days: 3 },
-      priority: "High",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 4,
+      depth: { type: DepthType.LAST_DAYS, days: 3 },
+      priority: Priority.HIGH,
       country: "Japan",
-      status: "Collected",
-      lastCollected: new Date("2026-01-14T07:20:00"),
-      changeStatus: "confirmed",
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T07:20:00"),
+      user: "user456",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
     {
       id: "7",
       url: "temperature-monitor.io/latest",
-      requestType: "Recurring",
-      frequency: 2,
-      depth: { type: "lastHours", hours: 2 },
-      priority: "High",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 2,
+      depth: { type: DepthType.LAST_HOURS, hours: 2 },
+      priority: Priority.HIGH,
       country: "France",
-      status: "Collecting",
-      lastCollected: new Date("2026-01-14T10:00:00"),
-      changeStatus: "confirmed",
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T10:00:00"),
+      user: "user789",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
     {
       id: "8",
       url: "eco-sensors.worldwide/api",
-      requestType: "Livestream",
-      frequency: 0,
-      cutOffTime: 24,
+      requestType: RequestType.LIVESTREAM,
+      cutOffTime: new Date("2026-01-31T23:59:59"),
       depth: {
-        type: "dateRange",
+        type: DepthType.DATE_RANGE,
         startDate: new Date("2026-01-01"),
         endDate: new Date("2026-01-31"),
       },
-      priority: "Medium",
+      priority: Priority.MEDIUM,
       country: "Canada",
-      status: "Collected",
-      lastCollected: new Date("2026-01-14T05:30:00"),
-      changeStatus: "confirmed",
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T05:30:00"),
+      user: "user123",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
     {
       id: "9",
       url: "data-hub.research.org/endpoints",
-      requestType: "Ad-Hoc",
-      frequency: 0,
-      depth: { type: "lastDays", days: 2 },
-      priority: "Medium",
+      requestType: RequestType.ADHOC,
+      depth: { type: DepthType.LAST_DAYS, days: 2 },
+      priority: Priority.MEDIUM,
       country: "India",
-      status: "Uploaded",
-      lastCollected: new Date("2026-01-14T04:15:00"),
-      changeStatus: "confirmed",
+      status: RequestStatus.DOWNLOADED,
+      createdTime: new Date("2026-01-14T04:15:00"),
+      user: "user456",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
+      changeStatus: ChangeStatus.UPLOADED,
     },
     {
       id: "10",
       url: "atmospheric-data.org/readings",
-      requestType: "Recurring",
-      frequency: 8,
-      depth: { type: "lastDays", days: 4 },
-      priority: "Low",
+      requestType: RequestType.RECURRING,
+      recurringFreq: 8,
+      depth: { type: DepthType.LAST_DAYS, days: 4 },
+      priority: Priority.LOW,
       country: "Brazil",
-      status: "Uploaded",
-      lastCollected: new Date("2026-01-14T06:00:00"),
+      status: RequestStatus.APPROVED,
+      createdTime: new Date("2026-01-14T06:00:00"),
+      user: "user789",
+      userGroup: "analysts",
+      contentType: "post",
+      mediaPlatform: "web",
+      mediaType: "social",
+      estimatedColDuration: 60,
       changeStatus: null,
     },
   ]);
@@ -157,35 +220,37 @@ function RequestListingPage(): JSX.Element {
 
   // Calculate if there are pending changes
   const hasPendingChanges = useMemo(() => {
-    return tasks.some((task) => task.changeStatus === "added" || task.changeStatus === "deleted");
+    return tasks.some(
+      (task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
+    );
   }, [tasks]);
 
   // Count pending changes
   const pendingChangesCount = useMemo(() => {
-    return tasks.filter((task) => task.changeStatus === "added" || task.changeStatus === "deleted")
-      .length;
+    return tasks.filter(
+      (task) => task.changeStatus === ChangeStatus.ADDED || task.changeStatus === ChangeStatus.DELETED
+    ).length;
   }, [tasks]);
 
-  // Handle adding a new task
-  const handleAddTask = (
-    newTask: Omit<Task, "id" | "status" | "lastCollected" | "changeStatus">,
+  // Handle adding multiple tasks
+  const handleAddTasks = (
+    newTasks: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">[]
   ): void => {
-    // Generate a temporary ID (in real app, this would come from the API)
-    const newId = `temp-${Date.now()}`;
-
-    const taskToAdd: Task = {
+    const tasksToAdd: Task[] = newTasks.map((newTask, index) => ({
       ...newTask,
-      id: newId,
-      status: "",
-      lastCollected: null,
-      changeStatus: "added", // Mark as newly added (shows green plus icon)
-    };
+      id: `temp-${Date.now()}-${index}`,
+      status: RequestStatus.CREATED,
+      createdTime: new Date(),
+      user: "current_user", // TODO: Get from auth context
+      userGroup: "default_group", // TODO: Get from auth context
+      changeStatus: ChangeStatus.ADDED, // Mark as newly added (shows green plus icon)
+    }));
 
-    // Add the new task to the beginning of the list
-    setTasks([taskToAdd, ...tasks]);
+    // Add all new tasks to the beginning of the list
+    setTasks([...tasksToAdd, ...tasks]);
 
-    // TODO: Make API call to persist the task to the backend
-    // After API success, update the task with the real ID from the server
+    // TODO: Make API call to persist the tasks to the backend
+    // After API success, update the tasks with real IDs from the server
   };
 
   const columns: GridColDef[] = [
@@ -196,29 +261,35 @@ function RequestListingPage(): JSX.Element {
       sortable: false,
       disableColumnMenu: true,
       renderCell: (params): JSX.Element | null => {
-        const changeStatus = params.value as ChangeStatus;
+        const changeStatus = params.value as ChangeStatus | null;
 
-        if (changeStatus === "added") {
+        if (changeStatus === ChangeStatus.ADDED) {
           return (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <AddIcon sx={{ color: "success.main" }} />
-            </Box>
+            <Tooltip title="Will be added in next export" placement="right">
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <AddIcon sx={{ color: "success.main" }} />
+              </Box>
+            </Tooltip>
           );
         }
 
-        if (changeStatus === "deleted") {
+        if (changeStatus === ChangeStatus.DELETED) {
           return (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <RemoveIcon sx={{ color: "error.main" }} />
-            </Box>
+            <Tooltip title="Will be deleted in next export" placement="right">
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <RemoveIcon sx={{ color: "error.main" }} />
+              </Box>
+            </Tooltip>
           );
         }
 
-        if (changeStatus === "confirmed") {
+        if (changeStatus === ChangeStatus.PENDING_UPLOAD) {
           return (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <FiberManualRecordIcon sx={{ color: "primary.main", fontSize: "12px" }} />
-            </Box>
+            <Tooltip title="Pending XML upload to W" placement="right">
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FiberManualRecordIcon sx={{ color: "primary.main", fontSize: "12px" }} />
+              </Box>
+            </Tooltip>
           );
         }
 
@@ -382,18 +453,11 @@ function RequestListingPage(): JSX.Element {
         ]}
       />
 
-      {/* Add Tasks Dialog (File Upload) */}
-      <AddTasksDialog
+      {/* Add Tasks Dialog with Staging */}
+      <AddTasksStagingDialog
         open={addTasksDialogOpen}
         onClose={() => setAddTasksDialogOpen(false)}
-        onManualAdd={() => setAddTaskDialogOpen(true)}
-      />
-
-      {/* Add Task Dialog (Manual Entry) */}
-      <AddTaskDialog
-        open={addTaskDialogOpen}
-        onClose={() => setAddTaskDialogOpen(false)}
-        onAddTask={handleAddTask}
+        onAddTasks={handleAddTasks}
       />
     </Box>
   );

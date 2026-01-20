@@ -14,13 +14,13 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AddIcon from "@mui/icons-material/Add";
 
-interface AddTasksDialogProps {
+interface FileUploadZoneProps {
   open: boolean;
   onClose: () => void;
   onManualAdd: () => void;
 }
 
-function AddTasksDialog(props: AddTasksDialogProps): JSX.Element {
+function FileUploadZone(props: FileUploadZoneProps): JSX.Element {
   const { open, onClose, onManualAdd } = props;
   const [dragActive, setDragActive] = useState(false);
 
@@ -173,4 +173,4 @@ function AddTasksDialog(props: AddTasksDialogProps): JSX.Element {
   );
 }
 
-export default AddTasksDialog;
+export default FileUploadZone;

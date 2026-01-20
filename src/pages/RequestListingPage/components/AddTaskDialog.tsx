@@ -26,7 +26,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { Task, RequestType, Priority, Depth } from "../types";
+import { Task, RequestType, Priority, Depth, DepthType } from "../types";
 
 // ISO Country names - using a subset for now, can be expanded with a library
 const COUNTRIES = [
@@ -60,7 +60,7 @@ const COUNTRIES = [
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
-  onAddTask: (task: Omit<Task, "id" | "status" | "lastCollected" | "changeStatus">) => void;
+  onAddTask: (task: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">) => void;
 }
 
 function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
@@ -68,15 +68,15 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
 
   // Form state
   const [url, setUrl] = useState("");
-  const [taskType, setTaskType] = useState<"RECURRING" | "ADHOC" | "LIVESTREAM">("ADHOC");
-  const [depthType, setDepthType] = useState<"lastHours" | "lastDays" | "dateRange">("lastHours");
+  const [requestType, setRequestType] = useState<RequestType>(RequestType.ADHOC);
+  const [depthType, setDepthType] = useState<DepthType>(DepthType.LAST_HOURS);
   const [lastXDays, setLastXDays] = useState(7);
   const [dateRangeStart, setDateRangeStart] = useState<Date>(new Date());
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
-  const [priority, setPriority] = useState<Priority>("Medium");
+  const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
   const [country, setCountry] = useState("");
-  const [frequency, setFrequency] = useState(1);
-  const [cutOffTime, setCutOffTime] = useState(24);
+  const [recurringFreq, setRecurringFreq] = useState(1);
+  const [cutOffTime, setCutOffTime] = useState<Date | null>(null);
   const [collectionStartDate, setCollectionStartDate] = useState<Date>(new Date());
   const [collectionEndDate, setCollectionEndDate] = useState<Date | null>(null);
   const [collectPopularOnly, setCollectPopularOnly] = useState(false);
@@ -85,15 +85,17 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
   const handleClose = (): void => {
     // Reset form
     setUrl("");
-    setTaskType("ADHOC");
-    setDepthType("lastHours");
+    setRequestType(RequestType.ADHOC);
+    setDepthType(DepthType.LAST_HOURS);
     setLastXDays(7);
     setDateRangeStart(new Date());
     setDateRangeEnd(null);
-    setPriority("Medium");
+    setPriority(Priority.MEDIUM);
     setCountry("");
-    setFrequency(1);
-    setCutOffTime(24);
+    setRecurringFreq(1);
+    const date = new Date();
+    date.setHours(date.getHours() + 24);
+    setCutOffTime(date);
     setCollectionStartDate(new Date());
     setCollectionEndDate(null);
     setCollectPopularOnly(false);
@@ -110,33 +112,52 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
 
     // Build depth object
     let depth: Depth;
-    if (depthType === "lastHours") {
-      depth = { type: "lastHours", hours: 2 };
-    } else if (depthType === "lastDays") {
-      depth = { type: "lastDays", days: lastXDays };
+    let backcrawlDepth: number | undefined;
+    let backcrawlStartTime: Date | undefined;
+    let backcrawlEndTime: Date | undefined;
+
+    if (depthType === DepthType.LAST_HOURS) {
+      depth = { type: DepthType.LAST_HOURS, hours: 2 };
+    } else if (depthType === DepthType.LAST_DAYS) {
+      depth = { type: DepthType.LAST_DAYS, days: lastXDays };
+      backcrawlDepth = lastXDays;
     } else {
       depth = {
-        type: "dateRange",
+        type: DepthType.DATE_RANGE,
         startDate: dateRangeStart,
         endDate: dateRangeEnd || undefined,
       };
+      backcrawlStartTime = dateRangeStart;
+      backcrawlEndTime = dateRangeEnd || undefined;
     }
 
-    // Map UI task type to database field
-    const requestTypeMap: Record<string, RequestType> = {
-      RECURRING: "Recurring",
-      ADHOC: "Ad-Hoc",
-      LIVESTREAM: "Livestream",
-    };
-
-    const newTask: Omit<Task, "id" | "status" | "lastCollected" | "changeStatus"> = {
+    const newTask: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus"> = {
       url: url.trim(),
-      requestType: requestTypeMap[taskType],
-      frequency: taskType === "RECURRING" ? frequency : 0,
-      cutOffTime: taskType === "LIVESTREAM" ? cutOffTime : undefined,
-      depth,
+      requestType: requestType,
       priority,
-      country,
+      // Required W parameters - these would come from a platform selection in a real form
+      contentType: "post", // Default value, should be configurable
+      mediaPlatform: "web", // Default value, should be configurable
+      mediaType: "social", // Default value, should be configurable
+      estimatedColDuration: 60, // Default 60 minutes, should be calculated
+
+      // Optional fields
+      backcrawlDepth,
+      backcrawlStartTime,
+      backcrawlEndTime,
+      country: country || undefined,
+      cutOffTime: requestType === RequestType.LIVESTREAM ? cutOffTime || undefined : undefined,
+      endCollectionTime: requestType === RequestType.RECURRING ? collectionEndDate || undefined : undefined,
+      isAlwaysRun: false,
+      isCollectPopularPostOnly: collectPopularOnly,
+      isCollectPostOnly: collectPostsOnly,
+      recurringFreq: requestType === RequestType.RECURRING ? recurringFreq : undefined,
+      startCollectionTime: collectionStartDate,
+      tags: [],
+      title: undefined,
+
+      // UI-only field
+      depth,
     };
 
     onAddTask(newTask);
@@ -183,9 +204,9 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setTaskType("ADHOC");
-                  setDepthType("lastHours");
-                  setPriority("Medium");
+                  setRequestType(RequestType.ADHOC);
+                  setDepthType(DepthType.LAST_HOURS);
+                  setPriority(Priority.MEDIUM);
                 }}
               >
                 Quick Start
@@ -194,8 +215,8 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setTaskType("ADHOC");
-                  setDepthType("lastHours");
+                  setRequestType(RequestType.ADHOC);
+                  setDepthType(DepthType.LAST_HOURS);
                 }}
               >
                 One-time
@@ -204,8 +225,8 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setTaskType("RECURRING");
-                  setDepthType("lastHours");
+                  setRequestType(RequestType.RECURRING);
+                  setDepthType(DepthType.LAST_HOURS);
                 }}
               >
                 Recurring (Timely)
@@ -214,8 +235,8 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setTaskType("RECURRING");
-                  setDepthType("dateRange");
+                  setRequestType(RequestType.RECURRING);
+                  setDepthType(DepthType.DATE_RANGE);
                 }}
               >
                 Recurring (Complete)
@@ -224,8 +245,8 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setTaskType("LIVESTREAM");
-                  setDepthType("dateRange");
+                  setRequestType(RequestType.LIVESTREAM);
+                  setDepthType(DepthType.DATE_RANGE);
                 }}
               >
                 Livestream
@@ -248,52 +269,54 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
               <FormLabel component="legend">Task Type</FormLabel>
               <RadioGroup
                 row
-                value={taskType}
-                onChange={(e) => setTaskType(e.target.value as typeof taskType)}
+                value={requestType}
+                onChange={(e) => setRequestType(e.target.value as RequestType)}
               >
-                <FormControlLabel value="ADHOC" control={<Radio />} label="One-time" />
-                <FormControlLabel value="RECURRING" control={<Radio />} label="Recurring" />
-                <FormControlLabel value="LIVESTREAM" control={<Radio />} label="Livestream" />
+                <FormControlLabel value={RequestType.ADHOC} control={<Radio />} label="One-time" />
+                <FormControlLabel value={RequestType.RECURRING} control={<Radio />} label="Recurring" />
+                <FormControlLabel value={RequestType.LIVESTREAM} control={<Radio />} label="Livestream" />
               </RadioGroup>
             </FormControl>
 
             {/* Frequency (only for Recurring) */}
-            {taskType === "RECURRING" && (
+            {requestType === RequestType.RECURRING && (
               <TextField
                 fullWidth
                 type="number"
                 label="Frequency (hours)"
-                value={frequency}
-                onChange={(e) => setFrequency(Math.max(1, parseInt(e.target.value) || 1))}
+                value={recurringFreq}
+                onChange={(e) => setRecurringFreq(Math.max(1, parseInt(e.target.value) || 1))}
                 inputProps={{ min: 1 }}
                 sx={{ mb: 2 }}
               />
             )}
 
             {/* Cut-off time (only for Livestream) */}
-            {taskType === "LIVESTREAM" && (
-              <TextField
-                fullWidth
-                type="number"
-                label="Cut-off time (hours)"
+            {requestType === RequestType.LIVESTREAM && (
+              <DateTimePicker
+                label="Cut-off Time"
                 value={cutOffTime}
-                onChange={(e) => setCutOffTime(Math.max(1, parseInt(e.target.value) || 1))}
-                inputProps={{ min: 1 }}
+                onChange={(newValue) => setCutOffTime(newValue)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                  },
+                }}
               />
             )}
 
             {/* Depth (not shown for Livestream) */}
-            {taskType !== "LIVESTREAM" && (
+            {requestType !== RequestType.LIVESTREAM && (
               <>
                 <FormControl component="fieldset" fullWidth>
                   <FormLabel component="legend">Depth</FormLabel>
                   <RadioGroup
                     value={depthType}
-                    onChange={(e) => setDepthType(e.target.value as typeof depthType)}
+                    onChange={(e) => setDepthType(e.target.value as DepthType)}
                   >
-                    <FormControlLabel value="lastHours" control={<Radio />} label="Last 2 hours" />
+                    <FormControlLabel value={DepthType.LAST_HOURS} control={<Radio />} label="Last 2 hours" />
                     <FormControlLabel
-                      value="lastDays"
+                      value={DepthType.LAST_DAYS}
                       control={<Radio />}
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -301,12 +324,12 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                         </Box>
                       }
                     />
-                    <FormControlLabel value="dateRange" control={<Radio />} label="Date range" />
+                    <FormControlLabel value={DepthType.DATE_RANGE} control={<Radio />} label="Date range" />
                   </RadioGroup>
                 </FormControl>
 
                 {/* Last X Days Input */}
-                {depthType === "lastDays" && (
+                {depthType === DepthType.LAST_DAYS && (
                   <TextField
                     type="number"
                     size="small"
@@ -318,7 +341,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 )}
 
                 {/* Date Range Fields */}
-                {depthType === "dateRange" && (
+                {depthType === DepthType.DATE_RANGE && (
                   <Box sx={{ mt: 2, ml: 4 }}>
                     <DateTimePicker
                       label="Start Date & Time"
@@ -361,11 +384,11 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
             {/* Priority */}
             <FormControl fullWidth sx={{ mb: 2 }}>
               <FormLabel>Priority</FormLabel>
-              <Select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
-                <MenuItem value="Urgent">Urgent</MenuItem>
-                <MenuItem value="High">High</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="Low">Low</MenuItem>
+              <Select value={priority} onChange={(e) => setPriority(Number(e.target.value) as Priority)}>
+                <MenuItem value={Priority.URGENT}>Urgent</MenuItem>
+                <MenuItem value={Priority.HIGH}>High</MenuItem>
+                <MenuItem value={Priority.MEDIUM}>Medium</MenuItem>
+                <MenuItem value={Priority.LOW}>Low</MenuItem>
               </Select>
             </FormControl>
 

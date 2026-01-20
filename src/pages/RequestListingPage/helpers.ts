@@ -1,10 +1,14 @@
-import { Task, TaskDisplay, Depth } from "./types";
+import { Task, TaskDisplay, Depth, PRIORITY_LABELS, Priority, RequestType, DepthType } from "./types";
 
 /**
  * Format frequency for display
  */
-export function formatFrequency(taskType: Task["requestType"], frequency: number): string {
-  if (taskType === "Livestream" || taskType === "Ad-Hoc") {
+export function formatFrequency(taskType: RequestType, frequency?: number): string {
+  if (taskType === RequestType.LIVESTREAM || taskType === RequestType.ADHOC) {
+    return "-";
+  }
+
+  if (!frequency) {
     return "-";
   }
 
@@ -16,20 +20,27 @@ export function formatFrequency(taskType: Task["requestType"], frequency: number
 }
 
 /**
+ * Get priority label from priority number
+ */
+export function getPriorityLabel(priority: Priority): string {
+  return PRIORITY_LABELS[priority];
+}
+
+/**
  * Format depth for display
  */
 export function formatDepth(depth: Depth): string {
   switch (depth.type) {
-    case "lastHours":
+    case DepthType.LAST_HOURS:
       return "Last 2 hours";
 
-    case "lastDays":
+    case DepthType.LAST_DAYS:
       if (depth.days === 1) {
         return "Last 1 day";
       }
       return `Last ${depth.days} days`;
 
-    case "dateRange": {
+    case DepthType.DATE_RANGE: {
       const startDate = depth.startDate.toISOString().split("T")[0];
       if (depth.endDate) {
         const endDate = depth.endDate.toISOString().split("T")[0];
@@ -69,12 +80,12 @@ export function taskToDisplay(task: Task): TaskDisplay {
     changeStatus: task.changeStatus,
     url: task.url,
     taskType: task.requestType,
-    frequency: formatFrequency(task.requestType, task.frequency),
+    frequency: formatFrequency(task.requestType, task.recurringFreq),
     depth: formatDepth(task.depth),
-    priority: task.priority,
-    country: task.country,
+    priority: getPriorityLabel(task.priority),
+    country: task.country || "-",
     status: task.status,
-    lastCollected: formatDate(task.lastCollected),
+    lastCollected: task.createdTime ? formatDate(task.createdTime) : "",
   };
 }
 
