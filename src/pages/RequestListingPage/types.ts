@@ -238,7 +238,15 @@ export enum FilterOption {
 // Helper type for creating new tasks (omit database-managed fields)
 export type TaskCreate = Omit<
   Task,
-  "id" | "createdTime" | "userGroup" | "version" | "changeStatus" | "latestEvent" | "collectionStatus" | "colEndTime" | "estimatedColDuration"
+  | "id"
+  | "createdTime"
+  | "userGroup"
+  | "version"
+  | "changeStatus"
+  | "latestEvent"
+  | "collectionStatus"
+  | "colEndTime"
+  | "estimatedColDuration"
 >;
 
 // Helper function to derive ChangeStatus from TMSRequestEvent
@@ -268,4 +276,119 @@ export function deriveChangeStatus(event?: TMSRequestEvent): ChangeStatus | null
   }
 
   return null;
+}
+
+// ========================================
+// NEW: TMS_Request and TMS_Request_Event for S-Segment
+// ========================================
+
+/**
+ * TMS_Request document - represents the current state of a task request
+ * This is a single document per request that gets updated in place
+ */
+export interface TmsRequest {
+  _id: string; // Unique UUID for the request
+  url: string;
+  requestType: RequestType;
+  priority: Priority;
+  contentType: string;
+  createdTime: Date;
+  userGroup: string;
+  version: number; // Increments with each event
+
+  // Optional fields
+  backcrawlDepth?: number; // in days
+  backcrawlStartTime?: Date;
+  backcrawlEndTime?: Date;
+  country?: string;
+  cutOffTime?: Date; // for LIVESTREAM
+  endCollectionTime?: Date; // for RECURRING
+  isAlwaysRun?: boolean;
+  isCollectPopularPostOnly?: boolean;
+  recurringFreq?: number; // in hours
+  startCollectionTime?: Date;
+  tags?: string[];
+  title?: string;
+}
+
+/**
+ * TMS_Request_Event document - append-only log of all actions on a request
+ * Multiple events can exist for the same requestId
+ */
+export interface TmsRequestEvent {
+  _id: string; // Unique UUID for this event
+  requestId: string; // Links to TmsRequest._id
+  eventType: EventType; // CREATE, UPDATE, DELETE, PAUSE, RESUME
+  status: EventStatus; // LOCAL, APPROVED, PENDING_UPLOAD, UPLOADED
+  version: number; // Version of the request at time of this event
+  payload: string; // Stringified JSON of request fields for XML export
+  user: string; // User who created this event
+  userGroup: string;
+  createdTime: Date;
+
+  // Optional fields
+  approvedBy?: string; // User who approved (or "SYSTEM-AUTO")
+  uploadedTime?: Date; // When event was uploaded
+}
+
+/**
+ * Payload structure for XML export
+ * Maps request fields to XML tags (a-m)
+ */
+export interface XmlPayload {
+  a?: number; // backcrawlDepth
+  b?: string; // backcrawlEndTime (ISO string)
+  c?: string; // backcrawlStartTime (ISO string)
+  d?: string; // cutOffTime (ISO string)
+  e?: string; // contentType
+  f?: string; // endCollectionTime (ISO string)
+  g?: boolean; // isAlwaysRun
+  h?: boolean; // isCollectPopularPostOnly
+  i?: number; // priority
+  j?: number; // recurringFreq
+  k?: string; // requestType
+  l?: string; // startCollectionTime (ISO string)
+  m?: string; // url
+}
+
+/**
+ * Helper function to convert TmsRequest to XmlPayload
+ */
+export function requestToXmlPayload(request: TmsRequest): XmlPayload {
+  const payload: XmlPayload = {
+    m: request.url,
+    k: request.requestType,
+    i: request.priority,
+    e: request.contentType,
+  };
+
+  if (request.backcrawlDepth !== undefined) {
+    payload.a = request.backcrawlDepth;
+  }
+  if (request.backcrawlEndTime) {
+    payload.b = request.backcrawlEndTime.toISOString();
+  }
+  if (request.backcrawlStartTime) {
+    payload.c = request.backcrawlStartTime.toISOString();
+  }
+  if (request.cutOffTime) {
+    payload.d = request.cutOffTime.toISOString();
+  }
+  if (request.endCollectionTime) {
+    payload.f = request.endCollectionTime.toISOString();
+  }
+  if (request.isAlwaysRun !== undefined) {
+    payload.g = request.isAlwaysRun;
+  }
+  if (request.isCollectPopularPostOnly !== undefined) {
+    payload.h = request.isCollectPopularPostOnly;
+  }
+  if (request.recurringFreq !== undefined) {
+    payload.j = request.recurringFreq;
+  }
+  if (request.startCollectionTime) {
+    payload.l = request.startCollectionTime.toISOString();
+  }
+
+  return payload;
 }

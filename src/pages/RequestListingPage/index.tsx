@@ -1,5 +1,6 @@
 import { JSX, useState, useMemo } from "react";
 import { Box, Chip, Tooltip } from "@mui/material";
+import { useNavigate } from "react-router";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -14,6 +15,7 @@ import { useTasksQuery, useCreateTaskMutation } from "../../queries/tasks";
 import { priorityColors } from "../../utils/colours";
 
 function RequestListingPage(): JSX.Element {
+  const navigate = useNavigate();
   const [quickFilterSearch, setQuickFilterSearch] = useState("");
   const [taskTypeFilter, setTaskTypeFilter] = useState<NdsBaseSelectOption[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<NdsBaseSelectOption[]>([]);
@@ -141,11 +143,7 @@ function RequestListingPage(): JSX.Element {
         const colors = priorityColors[priority] || { bg: "#757575", text: "#fff" };
 
         return (
-          <Chip
-            label={priority}
-            size="small"
-            sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: "bold" }}
-          />
+          <Chip label={priority} size="small" sx={{ bgcolor: colors.bg, color: colors.text }} />
         );
       },
     },
@@ -188,7 +186,7 @@ function RequestListingPage(): JSX.Element {
                 {
                   label: `Review Changes (${pendingChangesCount})`,
                   onClick: (): void => {
-                    // TODO: Open review changes dialog
+                    navigate("/review-changes");
                   },
                 },
               ]

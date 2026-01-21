@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 
 import ApplicationPage from "../pages/ApplicationPage";
 import DefaultLandingPage from "../pages/DefaultLandingPage";
+import ReviewChangesPage from "../pages/ReviewChangesPage";
 
 const router = createBrowserRouter([
   {
@@ -11,6 +12,10 @@ const router = createBrowserRouter([
   {
     path: "/request-listing-page",
     element: <ApplicationPage />,
+  },
+  {
+    path: "/review-changes",
+    element: <ReviewChangesPage />,
   },
 ]);
 

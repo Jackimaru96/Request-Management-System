@@ -253,7 +253,7 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                               <Chip
                                 label={priorityLabel}
                                 size="small"
-                                sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: "bold" }}
+                                sx={{ bgcolor: colors.bg, color: colors.text }}
                               />
                             </TableCell>
                             <TableCell>{task.country || "-"}</TableCell>

@@ -519,3 +519,48 @@ export async function deleteTask(id: string): Promise<void> {
 
   taskStore[taskIndex] = updatedTask;
 }
+
+/**
+ * Mark tasks with LOCAL events as PENDING_UPLOAD
+ * This happens after XML export
+ */
+export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void> {
+  await simulateNetworkLatency();
+
+  const currentTime = new Date();
+
+  taskIds.forEach((taskId) => {
+    const taskIndex = taskStore.findIndex((task) => task.id === taskId);
+    if (taskIndex === -1) {
+      return;
+    }
+
+    const existingTask = taskStore[taskIndex];
+
+    // Only update tasks that have LOCAL events
+    if (!existingTask.latestEvent || existingTask.latestEvent.status !== EventStatus.LOCAL) {
+      return;
+    }
+
+    // Create new PENDING_UPLOAD event
+    const newEventId = `evt-upload-${taskId}-${Date.now()}`;
+    const newEvent = {
+      ...existingTask.latestEvent,
+      _id: newEventId,
+      status: EventStatus.PENDING_UPLOAD,
+      version: existingTask.version + 1,
+      createdTime: currentTime,
+    };
+
+    // Update task with new event
+    const updatedTask: Task = {
+      ...existingTask,
+      version: existingTask.version + 1,
+      latestEvent: newEvent,
+      changeStatus: deriveChangeStatus(newEvent),
+    };
+
+    taskStore[taskIndex] = updatedTask;
+  });
+}
+

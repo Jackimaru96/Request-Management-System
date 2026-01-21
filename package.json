@@ -1,5 +1,5 @@
 {
-  "name": "Example Application",
+  "name": "TMS 2.0",
   "version": "0.1.0",
   "scripts": {
     "build:prod": "webpack --config webpack.prod.ts --stats-error-details",

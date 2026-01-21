@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
-import { listTasks, createTask, updateTask, deleteTask } from "../data/tasksApi.mock";
+import { listTasks, createTask, updateTask, deleteTask, markTasksAsPendingUpload } from "../data/tasksApi.mock";
 import { Task } from "../pages/RequestListingPage/types";
 
 // Query key for tasks
@@ -105,6 +105,21 @@ export function useDeleteTaskMutation(): UseMutationResult<void, Error, string> 
     onSuccess: (_, deletedId) => {
       // Refetch to get the updated task with DELETE event
       // (The task isn't removed, it's marked with a DELETE event)
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Hook to mark tasks as PENDING_UPLOAD after XML export
+ */
+export function useExportTasksMutation(): UseMutationResult<void, Error, string[]> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: markTasksAsPendingUpload,
+    onSuccess: () => {
+      // Refetch tasks to get updated status
       queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
     },
   });
