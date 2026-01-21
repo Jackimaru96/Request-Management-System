@@ -8,7 +8,7 @@ import { tasksToDisplay } from "../RequestListingPage/helpers";
 import { useTasksQuery, useExportTasksMutation } from "../../queries/tasks";
 import { generateXml, encryptXml, downloadXmlFile } from "../../utils/xmlGenerator";
 import ExportPasswordDialog from "./components/ExportPasswordDialog";
-import { priorityColors } from "../../utils/colours";
+import { priorityColors } from "../../utils/textStyling";
 
 function ReviewChangesPage(): JSX.Element {
   const navigate = useNavigate();

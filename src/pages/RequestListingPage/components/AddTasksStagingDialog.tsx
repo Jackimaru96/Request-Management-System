@@ -26,7 +26,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { Task } from "../types";
 import { formatFrequency, formatDepth, getPriorityLabel, toCamelCase } from "../helpers";
 import AddTaskDialog from "./AddTaskDialog";
-import { priorityColors } from "../../../utils/colours";
+import { priorityColors } from "../../../utils/textStyling";
 
 interface AddTasksStagingDialogProps {
   open: boolean;

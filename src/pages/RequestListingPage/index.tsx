@@ -8,7 +8,7 @@ import { GridColDef, NdsDataGrid, type NdsBaseSelectOption } from "@nautilus/nds
 import { JSX, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCreateTaskMutation, useDeleteTaskMutation, useTasksQuery } from "../../queries/tasks";
-import { priorityColors } from "../../utils/colours";
+import { priorityColors, strikethroughDimmedStyle } from "../../utils/textStyling";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
 import DeleteTaskDialog from "./components/DeleteTaskDialog";
 import { tasksToDisplay } from "./helpers";
@@ -145,9 +145,7 @@ function RequestListingPage(): JSX.Element {
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
         return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {params.value as string}
-          </span>
+          <span style={strikethroughDimmedStyle(isPendingDeletion)}>{params.value as string}</span>
         );
       },
     },
@@ -159,9 +157,7 @@ function RequestListingPage(): JSX.Element {
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
         return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {params.value as string}
-          </span>
+          <span style={strikethroughDimmedStyle(isPendingDeletion)}>{params.value as string}</span>
         );
       },
     },
@@ -173,9 +169,7 @@ function RequestListingPage(): JSX.Element {
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
         return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {params.value as string}
-          </span>
+          <span style={strikethroughDimmedStyle(isPendingDeletion)}>{params.value as string}</span>
         );
       },
     },
@@ -187,9 +181,7 @@ function RequestListingPage(): JSX.Element {
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
         return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {params.value as string}
-          </span>
+          <span style={strikethroughDimmedStyle(isPendingDeletion)}>{params.value as string}</span>
         );
       },
     },
@@ -210,7 +202,7 @@ function RequestListingPage(): JSX.Element {
             sx={{
               bgcolor: colors.bg,
               color: colors.text,
-              textDecoration: isPendingDeletion ? "line-through" : "none",
+              opacity: isPendingDeletion ? 0.6 : 1,
             }}
           />
         );
@@ -224,9 +216,7 @@ function RequestListingPage(): JSX.Element {
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
         return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {params.value as string}
-          </span>
+          <span style={{ opacity: isPendingDeletion ? 0.6 : 1 }}>{params.value as string}</span>
         );
       },
     },
@@ -237,14 +227,8 @@ function RequestListingPage(): JSX.Element {
       minWidth: 120,
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
-        const displayValue = isPendingDeletion
-          ? "Pending Deletion Upload"
-          : (params.value as string);
-        return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {displayValue}
-          </span>
-        );
+        const displayValue = params.value as string;
+        return <span style={{ opacity: isPendingDeletion ? 0.6 : 1 }}>{displayValue}</span>;
       },
     },
     {
@@ -255,9 +239,7 @@ function RequestListingPage(): JSX.Element {
       renderCell: (params): JSX.Element => {
         const isPendingDeletion = isPendingDeletionUpload(params.row.id as string);
         return (
-          <span style={{ textDecoration: isPendingDeletion ? "line-through" : "none" }}>
-            {params.value as string}
-          </span>
+          <span style={{ opacity: isPendingDeletion ? 0.6 : 1 }}>{params.value as string}</span>
         );
       },
     },
