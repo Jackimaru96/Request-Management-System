@@ -60,7 +60,9 @@ const COUNTRIES = [
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
-  onAddTask: (task: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">) => void;
+  onAddTask: (
+    task: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">,
+  ) => void;
 }
 
 function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
@@ -80,7 +82,6 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
   const [collectionStartDate, setCollectionStartDate] = useState<Date>(new Date());
   const [collectionEndDate, setCollectionEndDate] = useState<Date | null>(null);
   const [collectPopularOnly, setCollectPopularOnly] = useState(false);
-  const [collectPostsOnly, setCollectPostsOnly] = useState(false);
 
   const handleClose = (): void => {
     // Reset form
@@ -99,7 +100,6 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
     setCollectionStartDate(new Date());
     setCollectionEndDate(null);
     setCollectPopularOnly(false);
-    setCollectPostsOnly(false);
     onClose();
   };
 
@@ -131,14 +131,15 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       backcrawlEndTime = dateRangeEnd || undefined;
     }
 
-    const newTask: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus"> = {
+    const newTask: Omit<
+      Task,
+      "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus"
+    > = {
       url: url.trim(),
       requestType: requestType,
       priority,
       // Required W parameters - these would come from a platform selection in a real form
       contentType: "post", // Default value, should be configurable
-      mediaPlatform: "web", // Default value, should be configurable
-      mediaType: "social", // Default value, should be configurable
       estimatedColDuration: 60, // Default 60 minutes, should be calculated
 
       // Optional fields
@@ -147,10 +148,10 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       backcrawlEndTime,
       country: country || undefined,
       cutOffTime: requestType === RequestType.LIVESTREAM ? cutOffTime || undefined : undefined,
-      endCollectionTime: requestType === RequestType.RECURRING ? collectionEndDate || undefined : undefined,
+      endCollectionTime:
+        requestType === RequestType.RECURRING ? collectionEndDate || undefined : undefined,
       isAlwaysRun: false,
       isCollectPopularPostOnly: collectPopularOnly,
-      isCollectPostOnly: collectPostsOnly,
       recurringFreq: requestType === RequestType.RECURRING ? recurringFreq : undefined,
       startCollectionTime: collectionStartDate,
       tags: [],
@@ -158,6 +159,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
 
       // UI-only field
       depth,
+      version: 1,
     };
 
     onAddTask(newTask);
@@ -273,8 +275,16 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 onChange={(e) => setRequestType(e.target.value as RequestType)}
               >
                 <FormControlLabel value={RequestType.ADHOC} control={<Radio />} label="One-time" />
-                <FormControlLabel value={RequestType.RECURRING} control={<Radio />} label="Recurring" />
-                <FormControlLabel value={RequestType.LIVESTREAM} control={<Radio />} label="Livestream" />
+                <FormControlLabel
+                  value={RequestType.RECURRING}
+                  control={<Radio />}
+                  label="Recurring"
+                />
+                <FormControlLabel
+                  value={RequestType.LIVESTREAM}
+                  control={<Radio />}
+                  label="Livestream"
+                />
               </RadioGroup>
             </FormControl>
 
@@ -314,7 +324,11 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                     value={depthType}
                     onChange={(e) => setDepthType(e.target.value as DepthType)}
                   >
-                    <FormControlLabel value={DepthType.LAST_HOURS} control={<Radio />} label="Last 2 hours" />
+                    <FormControlLabel
+                      value={DepthType.LAST_HOURS}
+                      control={<Radio />}
+                      label="Last 2 hours"
+                    />
                     <FormControlLabel
                       value={DepthType.LAST_DAYS}
                       control={<Radio />}
@@ -324,7 +338,11 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                         </Box>
                       }
                     />
-                    <FormControlLabel value={DepthType.DATE_RANGE} control={<Radio />} label="Date range" />
+                    <FormControlLabel
+                      value={DepthType.DATE_RANGE}
+                      control={<Radio />}
+                      label="Date range"
+                    />
                   </RadioGroup>
                 </FormControl>
 
@@ -384,7 +402,10 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
             {/* Priority */}
             <FormControl fullWidth sx={{ mb: 2 }}>
               <FormLabel>Priority</FormLabel>
-              <Select value={priority} onChange={(e) => setPriority(Number(e.target.value) as Priority)}>
+              <Select
+                value={priority}
+                onChange={(e) => setPriority(Number(e.target.value) as Priority)}
+              >
                 <MenuItem value={Priority.URGENT}>Urgent</MenuItem>
                 <MenuItem value={Priority.HIGH}>High</MenuItem>
                 <MenuItem value={Priority.MEDIUM}>Medium</MenuItem>
@@ -479,15 +500,6 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                     />
                   }
                   label="Collect popular posts only"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={collectPostsOnly}
-                      onChange={(e) => setCollectPostsOnly(e.target.checked)}
-                    />
-                  }
-                  label="Collect posts only"
                 />
               </Box>
             </AccordionDetails>
