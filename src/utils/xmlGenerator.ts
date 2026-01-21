@@ -11,8 +11,11 @@ export function generateXml(tasks: Task[]): string {
     const eventNumber = String(index + 1).padStart(3, "0");
     const payload = taskToXmlPayload(task);
 
-    const payloadXml = Object.entries(payload)
-      .map(([key, value]) => {
+    // Sort payload keys alphabetically (a, b, c, ..., m)
+    const payloadXml = Object.keys(payload)
+      .sort()
+      .map((key) => {
+        const value = payload[key as keyof XmlPayload];
         if (value === undefined) {
           return "";
         }
@@ -67,7 +70,7 @@ function taskToXmlPayload(task: Task): XmlPayload {
     payload.g = task.isAlwaysRun;
   }
   if (task.isCollectPopularPostOnly !== undefined) {
-    payload.h = task.isCollectPopularPostOnly;
+    payload.h = task.isCollectPopularPostOnly ? 1 : 0;
   }
   if (task.recurringFreq !== undefined) {
     payload.j = task.recurringFreq;
@@ -113,7 +116,7 @@ function simpleHash(text: string): string {
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
     const char = text.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash).toString(16);

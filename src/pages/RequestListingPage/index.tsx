@@ -20,7 +20,7 @@ function RequestListingPage(): JSX.Element {
   const [taskTypeFilter, setTaskTypeFilter] = useState<NdsBaseSelectOption[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<NdsBaseSelectOption[]>([]);
   const [paginationModel, setPaginationModel] = useState({
-    pageSize: 10,
+    pageSize: 25,
     page: 0,
   });
   const [addTasksDialogOpen, setAddTasksDialogOpen] = useState(false);
