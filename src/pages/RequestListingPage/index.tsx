@@ -1,16 +1,19 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import HistoryIcon from "@mui/icons-material/History";
 import RemoveIcon from "@mui/icons-material/Remove";
-import { Box, Button, Chip, Tooltip, Typography } from "@mui/material";
-import { GridColDef, NdsDataGrid, type NdsBaseSelectOption } from "@nautilus/nds-react";
+import { Box, Button, Chip, Tooltip, Typography, CircularProgress } from "@mui/material";
+import { GridColDef, GridRowSelectionModel, NdsDataGrid, type NdsBaseSelectOption } from "@nautilus/nds-react";
 import { JSX, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useCreateTaskMutation, useDeleteTaskMutation, useTasksQuery } from "../../queries/tasks";
+import { useCreateTaskMutation, useDeleteTaskMutation, useTasksQuery, useExportSelectedTasksMutation } from "../../queries/tasks";
 import { priorityColors, strikethroughDimmedStyle } from "../../utils/textStyling";
+import { generateXml, encryptXml, downloadXmlFile } from "../../utils/xmlGenerator";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
 import DeleteTaskDialog from "./components/DeleteTaskDialog";
+import ExportPasswordDialog from "../ReviewChangesPage/components/ExportPasswordDialog";
 import { tasksToDisplay } from "./helpers";
 import { ChangeStatus, EventStatus, EventType, Task, TaskDisplay } from "./types";
 
@@ -26,11 +29,17 @@ function RequestListingPage(): JSX.Element {
   const [addTasksDialogOpen, setAddTasksDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<TaskDisplay | null>(null);
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
+  const [exportPasswordDialogOpen, setExportPasswordDialogOpen] = useState(false);
 
   // Use React Query to fetch tasks
   const { data: tasks = [] } = useTasksQuery();
   const createTaskMutation = useCreateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
+  const exportSelectedMutation = useExportSelectedTasksMutation();
 
   // Convert tasks to display format
   const rows: TaskDisplay[] = useMemo(() => tasksToDisplay(tasks), [tasks]);
@@ -87,6 +96,48 @@ function RequestListingPage(): JSX.Element {
       deleteTaskMutation.mutate(taskToDelete.id);
     }
     setTaskToDelete(null);
+  };
+
+  // Handle export selected tasks
+  const handleExportSelected = (): void => {
+    if (rowSelectionModel.ids.size === 0) {
+      return;
+    }
+    setExportPasswordDialogOpen(true);
+  };
+
+  // Handle password confirm for export
+  const handleExportPasswordConfirm = async (password: string): Promise<void> => {
+    try {
+      // Convert selection model to string array (row IDs are strings in our case)
+      const selectedIds = Array.from(rowSelectionModel.ids).map((id) => String(id));
+
+      // Call API to get task data for selected IDs
+      const response = await exportSelectedMutation.mutateAsync(selectedIds);
+
+      // Parse response (simple runtime validation)
+      if (!response || !Array.isArray(response.tasks)) {
+        throw new Error("Invalid response format from export API");
+      }
+
+      const selectedTasks: Task[] = response.tasks;
+
+      // Generate XML from tasks
+      const xmlContent = generateXml(selectedTasks);
+
+      // Encrypt with password
+      const encryptedXml = encryptXml(xmlContent, password);
+
+      // Download the file
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+      downloadXmlFile(encryptedXml, `tms_selected_export_${timestamp}.xml`);
+
+      // Clear selection after successful export
+      setRowSelectionModel({ type: 'include', ids: new Set() });
+    } catch (error) {
+      console.error("Failed to export selected tasks:", error);
+      // Error handling could be improved with user notification
+    }
   };
 
   // Helper to check if task is pending deletion upload (DELETE event with PENDING_UPLOAD status)
@@ -273,18 +324,32 @@ function RequestListingPage(): JSX.Element {
           ADD TASKS
         </Button>
 
-        {/* Right side - History and Review Changes buttons */}
+        {/* Right side - Export Selected, Review Changes buttons */}
         <Box sx={{ display: "flex", gap: 2 }}>
-          {/* <Button
-            variant="outlined"
-            startIcon={<HistoryIcon />}
-            onClick={(): void => {
-              // TODO: Implement history functionality when route is available
-            }}
-            sx={{ textTransform: "none" }}
+          {/* Download Selected XML button */}
+          <Tooltip
+            title={rowSelectionModel.ids.size === 0 ? "Select at least one task to download" : ""}
+            arrow
+            placement="top"
           >
-            History
-          </Button> */}
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={
+                  exportSelectedMutation.isPending ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <DownloadIcon />
+                  )
+                }
+                disabled={rowSelectionModel.ids.size === 0 || exportSelectedMutation.isPending}
+                onClick={handleExportSelected}
+                sx={{ textTransform: "none" }}
+              >
+                DOWNLOAD SELECTED XML ({rowSelectionModel.ids.size})
+              </Button>
+            </span>
+          </Tooltip>
 
           <Tooltip
             title={!hasPendingChanges ? "No pending changes to review" : ""}
@@ -309,11 +374,15 @@ function RequestListingPage(): JSX.Element {
         </Box>
       </Box>
 
-      {/* Data Grid - without primaryButton and toolbarButtons */}
+      {/* Data Grid - with checkbox selection enabled */}
       <NdsDataGrid
-        disableRowSelectionOnClick
+        checkboxSelection
         rows={rows}
         columns={columns}
+        rowSelectionModel={rowSelectionModel}
+        onRowSelectionModelChange={(newSelection: GridRowSelectionModel) => {
+          setRowSelectionModel(newSelection);
+        }}
         menuItems={[
           {
             label: "Delete",
@@ -379,6 +448,13 @@ function RequestListingPage(): JSX.Element {
         }}
         onConfirm={handleConfirmDelete}
         taskUrl={taskToDelete?.url}
+      />
+
+      {/* Export Password Dialog */}
+      <ExportPasswordDialog
+        open={exportPasswordDialogOpen}
+        onClose={() => setExportPasswordDialogOpen(false)}
+        onConfirm={handleExportPasswordConfirm}
       />
     </Box>
   );

@@ -537,3 +537,90 @@ export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void>
     }),
   );
 }
+
+/**
+ * Mark tasks with PENDING_UPLOAD events as UPLOADED
+ * This simulates successful B-segment upload
+ * DevTools utility for testing
+ *
+ * Special handling:
+ * - Tasks with DELETE eventType are removed from database
+ * - Tasks with CREATE/UPDATE eventType are marked as UPLOADED
+ */
+export async function markPendingUploadAsUploaded(): Promise<{
+  updatedRequestIds: string[];
+  createdEvents: number;
+}> {
+  await simulateNetworkLatency();
+
+  const currentTime = new Date();
+  const updatedRequestIds: string[] = [];
+  let createdEvents = 0;
+
+  updateTasks((allTasks) => {
+    const processedTasks: Task[] = [];
+
+    for (const task of allTasks) {
+      // Only process tasks that have PENDING_UPLOAD events
+      if (!task.latestEvent || task.latestEvent.status !== EventStatus.PENDING_UPLOAD) {
+        processedTasks.push(task);
+        continue;
+      }
+
+      // If the event is DELETE, remove the task from the database
+      if (task.latestEvent.eventType === EventType.DELETE) {
+        updatedRequestIds.push(task.id);
+        createdEvents++;
+        // Skip adding this task (effectively deletes it)
+        continue;
+      }
+
+      // For CREATE/UPDATE events, create new UPLOADED event
+      const newEventId = `evt-uploaded-${task.id}-${Date.now()}`;
+      const newEvent = {
+        ...task.latestEvent,
+        _id: newEventId,
+        status: EventStatus.UPLOADED,
+        version: task.version + 1,
+        createdTime: currentTime,
+        uploadedTime: currentTime, // Add uploadedTime field
+      };
+
+      // Track this update
+      updatedRequestIds.push(task.id);
+      createdEvents++;
+
+      // Update task with new event
+      processedTasks.push({
+        ...task,
+        version: task.version + 1,
+        latestEvent: newEvent,
+        changeStatus: deriveChangeStatus(newEvent),
+      });
+    }
+
+    return processedTasks;
+  });
+
+  return { updatedRequestIds, createdEvents };
+}
+
+/**
+ * Export selected tasks to XML payload
+ * Simulates backend API call that returns task data for selected IDs
+ * This is used for ad-hoc "Download Selected XML" feature
+ */
+export async function exportTasksToXmlPayload(taskIds: string[]): Promise<{ tasks: Task[] }> {
+  // Simulate network latency (200-800ms)
+  const delay = Math.floor(Math.random() * 600) + 200;
+  await new Promise((resolve) => setTimeout(resolve, delay));
+
+  // Get all tasks from database
+  const allTasks = getAllTasks();
+
+  // Filter tasks by the provided IDs
+  const selectedTasks = allTasks.filter((task) => taskIds.includes(task.id));
+
+  // Return in expected JSON structure
+  return { tasks: selectedTasks };
+}

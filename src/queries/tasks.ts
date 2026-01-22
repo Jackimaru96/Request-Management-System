@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
-import { listTasks, createTask, updateTask, deleteTask, markTasksAsPendingUpload } from "../data/tasksApi.mock";
+import { listTasks, createTask, updateTask, deleteTask, markTasksAsPendingUpload, exportTasksToXmlPayload } from "../data/tasksApi.mock";
 import { Task } from "../pages/RequestListingPage/types";
 
 // Query key for tasks
@@ -122,5 +122,17 @@ export function useExportTasksMutation(): UseMutationResult<void, Error, string[
       // Refetch tasks to get updated status
       queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
     },
+  });
+}
+
+/**
+ * Hook to export selected tasks to XML payload
+ * This is for ad-hoc "Download Selected XML" feature
+ * Does NOT modify task statuses or create events
+ */
+export function useExportSelectedTasksMutation(): UseMutationResult<{ tasks: Task[] }, Error, string[]> {
+  return useMutation({
+    mutationFn: exportTasksToXmlPayload,
+    // No cache updates needed - this is read-only export
   });
 }

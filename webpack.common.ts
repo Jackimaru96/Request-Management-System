@@ -76,7 +76,10 @@ const commonConfig: Configuration = {
       },
       inject: true,
     }),
-    new DefinePlugin({ "process.env.VERSION": JSON.stringify(version) }),
+    new DefinePlugin({
+      "process.env.VERSION": JSON.stringify(version),
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    }),
   ],
 };
 
