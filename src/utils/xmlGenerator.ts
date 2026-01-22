@@ -1,97 +1,30 @@
-import { Task, XmlPayload } from "../pages/RequestListingPage/types";
+import { Task } from "../pages/RequestListingPage/types";
+import { serializeEventToXml } from "./xmlSerializers";
 
 /**
- * Generate XML content for export
- * Each task with LOCAL status gets converted to an event XML element
+ * Generate XML content for export (ERD-compliant)
+ *
+ * Each task gets converted to an event XML element using centralized
+ * serialization logic from xmlSerializers.ts.
+ *
+ * Output format matches ERD specifications:
+ * - Datetime fields as epoch milliseconds
+ * - Boolean fields as 0/1
+ * - Includes userGroup per ERD requirements
+ *
+ * @param tasks - Array of Task objects to export
+ * @returns Complete XML document string
  */
 export function generateXml(tasks: Task[]): string {
   const xmlElements: string[] = [];
 
   tasks.forEach((task, index) => {
     const eventNumber = String(index + 1).padStart(3, "0");
-    const payload = taskToXmlPayload(task);
-
-    // Sort payload keys alphabetically (a, b, c, ..., m)
-    const payloadXml = Object.keys(payload)
-      .sort()
-      .map((key) => {
-        const value = payload[key as keyof XmlPayload];
-        if (value === undefined) {
-          return "";
-        }
-        return `    <${key}>${escapeXml(String(value))}</${key}>`;
-      })
-      .filter((line) => line !== "")
-      .join("\n");
-
-    const eventXml = `<event${eventNumber}>
-  <eventType>${task.latestEvent?.eventType || "CREATE"}</eventType>
-  <requestId>${task.id}</requestId>
-  <ver>${task.version}</ver>
-  <payload>
-${payloadXml}
-  </payload>
-</event${eventNumber}>`;
-
+    const eventXml = serializeEventToXml(task, eventNumber);
     xmlElements.push(eventXml);
   });
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<events>\n${xmlElements.join("\n\n")}\n</events>`;
-}
-
-/**
- * Convert Task to XmlPayload
- * Maps task fields to XML payload structure (a-m)
- */
-function taskToXmlPayload(task: Task): XmlPayload {
-  const payload: XmlPayload = {
-    m: task.url,
-    k: task.requestType,
-    i: task.priority,
-    e: task.contentType,
-  };
-
-  if (task.backcrawlDepth !== undefined) {
-    payload.a = task.backcrawlDepth;
-  }
-  if (task.backcrawlEndTime) {
-    payload.b = task.backcrawlEndTime.toISOString();
-  }
-  if (task.backcrawlStartTime) {
-    payload.c = task.backcrawlStartTime.toISOString();
-  }
-  if (task.cutOffTime) {
-    payload.d = task.cutOffTime.toISOString();
-  }
-  if (task.endCollectionTime) {
-    payload.f = task.endCollectionTime.toISOString();
-  }
-  if (task.isAlwaysRun !== undefined) {
-    payload.g = task.isAlwaysRun;
-  }
-  if (task.isCollectPopularPostOnly !== undefined) {
-    payload.h = task.isCollectPopularPostOnly;
-  }
-  if (task.recurringFreq !== undefined) {
-    payload.j = task.recurringFreq;
-  }
-  if (task.startCollectionTime) {
-    payload.l = task.startCollectionTime.toISOString();
-  }
-
-  return payload;
-}
-
-/**
- * Escape special XML characters
- */
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }
 
 /**

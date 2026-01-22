@@ -32,9 +32,10 @@ export enum EventType {
   DELETE = "DELETE",
 }
 
-// Event Status enum - maps to TMS_Request_Event.status
+// Event Status enum - maps to TMS_Request_Event.status (per ERD)
 export enum EventStatus {
   LOCAL = "LOCAL", // Event created locally, not yet exported
+  APPROVED = "APPROVED", // Event approved for export (per ERD)
   PENDING_UPLOAD = "PENDING_UPLOAD", // Event included in XML export, waiting for upload
   UPLOADED = "UPLOADED", // Event successfully uploaded to W
 }
@@ -214,23 +215,29 @@ export interface TaskDisplay {
 // ========================================
 
 /**
- * Payload structure for XML export
- * Maps request fields to XML tags (a-m)
+ * Payload structure for XML export (ERD-compliant)
+ *
+ * IMPORTANT: This interface represents the SERIALIZED payload structure per ERD.
+ * - Datetime fields (b,c,d,f,l) are serialized as epoch milliseconds (number)
+ * - Boolean fields (g,h) are serialized as 0 or 1 (number)
+ * - Enum fields (i,k) use numeric values for priority, string for requestType
+ *
+ * Use xmlSerializers.ts helpers for conversion from Task to XmlPayload.
  */
 export interface XmlPayload {
-  a?: number; // backcrawlDepth
-  b?: string; // backcrawlEndTime (ISO string)
-  c?: string; // backcrawlStartTime (ISO string)
-  d?: string; // cutOffTime (ISO string)
-  e?: string; // contentType
-  f?: string; // endCollectionTime (ISO string)
-  g?: boolean; // isAlwaysRun
-  h?: boolean; // isCollectPopularPostOnly
-  i?: number; // priority
-  j?: number; // recurringFreq
-  k?: string; // requestType
-  l?: string; // startCollectionTime (ISO string)
-  m?: string; // url
+  a?: number; // backcrawlDepth (int)
+  b?: number; // backcrawlEndTime (epoch milliseconds)
+  c?: number; // backcrawlStartTime (epoch milliseconds)
+  d?: number; // cutOffTime (epoch milliseconds)
+  e?: string; // contentType (string)
+  f?: number; // endCollectionTime (epoch milliseconds)
+  g?: number; // isAlwaysRun (0 or 1)
+  h?: number; // isCollectPopularPostOnly (0 or 1)
+  j: number; // priority (enum value 0-3)
+  k?: number; // recurringFreq (hours as int)
+  m: string; // requestType (enum value as string: ADHOC/RECURRING/LIVESTREAM)
+  n?: number; // startCollectionTime (epoch milliseconds)
+  p: string; // url (string)
 }
 
 // ========================================
