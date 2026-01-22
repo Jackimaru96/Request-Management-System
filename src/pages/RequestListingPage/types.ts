@@ -11,10 +11,10 @@ export enum RequestType {
 
 // Priority enum - maps to TMS_Request.priority (stored as int in DB)
 export enum Priority {
-  URGENT = 1,
-  HIGH = 2,
-  MEDIUM = 3,
-  LOW = 4,
+  URGENT = 0,
+  HIGH = 1,
+  MEDIUM = 2,
+  LOW = 3,
 }
 
 // Display labels for priority
