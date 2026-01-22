@@ -41,13 +41,13 @@ export enum EventStatus {
 
 // Collection Request Status enum - maps to Col_Request.status
 export enum CollectionStatus {
-  PENDING_C = "PENDING-C",
+  PENDING_C = "PENDING_C",
   COLLECTING = "COLLECTING",
   COMPLETED = "COMPLETED",
   SUSPENDED = "SUSPENDED",
   ERROR = "ERROR",
   PAUSED = "PAUSED",
-  ERROR_COUNT = "ERROR-COUNT",
+  ERROR_COUNT = "ERROR_COUNT",
   DELETING = "DELETING",
   DELETED = "DELETED",
 }
