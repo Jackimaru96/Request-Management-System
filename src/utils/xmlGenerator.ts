@@ -1,4 +1,4 @@
-import { Task, XmlPayload, requestToXmlPayload } from "../pages/RequestListingPage/types";
+import { Task, XmlPayload } from "../pages/RequestListingPage/types";
 
 /**
  * Generate XML content for export
@@ -70,7 +70,7 @@ function taskToXmlPayload(task: Task): XmlPayload {
     payload.g = task.isAlwaysRun;
   }
   if (task.isCollectPopularPostOnly !== undefined) {
-    payload.h = task.isCollectPopularPostOnly ? 1 : 0;
+    payload.h = task.isCollectPopularPostOnly;
   }
   if (task.recurringFreq !== undefined) {
     payload.j = task.recurringFreq;

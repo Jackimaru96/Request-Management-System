@@ -318,7 +318,6 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
         open={addTaskDialogOpen}
         onClose={handleCloseAddDialog}
         onAddTask={handleAddTask}
-        editingTask={editingTaskIndex !== null ? stagedTasks[editingTaskIndex] : undefined}
       />
     </>
   );

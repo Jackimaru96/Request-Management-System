@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { markPendingUploadAsUploaded } from "../data/tasksApi.mock";
+import { markPendingUploadAsUploaded } from "../data";
 import { TASKS_QUERY_KEY } from "../queries/tasks";
 
 /**

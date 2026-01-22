@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
-import { listTasks, createTask, updateTask, deleteTask, markTasksAsPendingUpload, exportTasksToXmlPayload, deleteSelectedTasks } from "../data/tasksApi.mock";
+import { listTasks, createTask, markTasksAsPendingUpload, exportTasksToXmlPayload, deleteSelectedTasks } from "../data";
 import { Task } from "../pages/RequestListingPage/types";
 
 // Query key for tasks
@@ -53,62 +53,6 @@ export function useCreateTaskMutation(): UseMutationResult<
   });
 }
 
-/**
- * Hook to update an existing task
- */
-export function useUpdateTaskMutation(): UseMutationResult<
-  Task,
-  Error,
-  {
-    id: string;
-    patch: Partial<
-      Omit<
-        Task,
-        | "id"
-        | "createdTime"
-        | "user"
-        | "userGroup"
-        | "version"
-        | "changeStatus"
-        | "latestEvent"
-        | "collectionStatus"
-        | "colEndTime"
-        | "estimatedColDuration"
-      >
-    >;
-  }
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, patch }) => updateTask(id, patch),
-    onSuccess: (updatedTask) => {
-      // Update the task in the cache
-      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (oldTasks) => {
-        if (!oldTasks) {
-          return [updatedTask];
-        }
-        return oldTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task));
-      });
-    },
-  });
-}
-
-/**
- * Hook to delete a task
- */
-export function useDeleteTaskMutation(): UseMutationResult<void, Error, string> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteTask,
-    onSuccess: (_, deletedId) => {
-      // Refetch to get the updated task with DELETE event
-      // (The task isn't removed, it's marked with a DELETE event)
-      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-    },
-  });
-}
 
 /**
  * Hook to mark tasks as PENDING_UPLOAD after XML export

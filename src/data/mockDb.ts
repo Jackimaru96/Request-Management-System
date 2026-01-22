@@ -1,6 +1,6 @@
 import { Task } from "../pages/RequestListingPage/types";
 import { MockDbSchema, CURRENT_SCHEMA_VERSION, MOCK_DB_KEY } from "./mockDb.types";
-import { seedTasks } from "./tasksApi.mock";
+import { seedTasks } from "./tasksApiMock";
 
 /**
  * Get the database from localStorage

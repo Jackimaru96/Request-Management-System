@@ -30,14 +30,11 @@ export enum EventType {
   CREATE = "CREATE",
   UPDATE = "UPDATE",
   DELETE = "DELETE",
-  PAUSE = "PAUSE",
-  RESUME = "RESUME",
 }
 
 // Event Status enum - maps to TMS_Request_Event.status
 export enum EventStatus {
   LOCAL = "LOCAL", // Event created locally, not yet exported
-  APPROVED = "APPROVED", // Event approved for upload (not currently used in UI)
   PENDING_UPLOAD = "PENDING_UPLOAD", // Event included in XML export, waiting for upload
   UPLOADED = "UPLOADED", // Event successfully uploaded to W
 }
@@ -234,48 +231,6 @@ export interface XmlPayload {
   k?: string; // requestType
   l?: string; // startCollectionTime (ISO string)
   m?: string; // url
-}
-
-/**
- * Helper function to convert TmsRequest to XmlPayload
- */
-export function requestToXmlPayload(request: TmsRequest): XmlPayload {
-  const payload: XmlPayload = {
-    m: request.url,
-    k: request.requestType,
-    i: request.priority,
-    e: request.contentType,
-  };
-
-  if (request.backcrawlDepth !== undefined) {
-    payload.a = request.backcrawlDepth;
-  }
-  if (request.backcrawlEndTime) {
-    payload.b = request.backcrawlEndTime.toISOString();
-  }
-  if (request.backcrawlStartTime) {
-    payload.c = request.backcrawlStartTime.toISOString();
-  }
-  if (request.cutOffTime) {
-    payload.d = request.cutOffTime.toISOString();
-  }
-  if (request.endCollectionTime) {
-    payload.f = request.endCollectionTime.toISOString();
-  }
-  if (request.isAlwaysRun !== undefined) {
-    payload.g = request.isAlwaysRun;
-  }
-  if (request.isCollectPopularPostOnly !== undefined) {
-    payload.h = request.isCollectPopularPostOnly;
-  }
-  if (request.recurringFreq !== undefined) {
-    payload.j = request.recurringFreq;
-  }
-  if (request.startCollectionTime) {
-    payload.l = request.startCollectionTime.toISOString();
-  }
-
-  return payload;
 }
 
 // ========================================

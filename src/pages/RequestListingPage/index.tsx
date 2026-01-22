@@ -16,7 +16,6 @@ import { JSX, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   useCreateTaskMutation,
-  useDeleteTaskMutation,
   useTasksQuery,
   useExportSelectedTasksMutation,
   useDeleteSelectedTasksMutation,
@@ -24,7 +23,6 @@ import {
 import { priorityColors, strikethroughDimmedStyle } from "../../utils/textStyling";
 import { generateXml, encryptXml, downloadXmlFile } from "../../utils/xmlGenerator";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
-import DeleteTaskDialog from "./components/DeleteTaskDialog";
 import DeleteSelectedConfirmDialog from "./components/DeleteSelectedConfirmDialog";
 import ExportPasswordDialog from "../ReviewChangesPage/components/ExportPasswordDialog";
 import TaskDetailsDialog from "./components/TaskDetailsDialog";
@@ -41,8 +39,6 @@ function RequestListingPage(): JSX.Element {
     page: 0,
   });
   const [addTasksDialogOpen, setAddTasksDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState<TaskDisplay | null>(null);
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: "include",
     ids: new Set(),
@@ -55,7 +51,6 @@ function RequestListingPage(): JSX.Element {
   // Use React Query to fetch tasks
   const { data: tasks = [] } = useTasksQuery();
   const createTaskMutation = useCreateTaskMutation();
-  const deleteTaskMutation = useDeleteTaskMutation();
   const exportSelectedMutation = useExportSelectedTasksMutation();
   const deleteSelectedMutation = useDeleteSelectedTasksMutation();
 
@@ -100,20 +95,6 @@ function RequestListingPage(): JSX.Element {
     newTasks.forEach((newTask) => {
       createTaskMutation.mutate(newTask);
     });
-  };
-
-  // Handle delete task (legacy - can be removed if not used elsewhere)
-  const handleDeleteTask = (taskDisplay: TaskDisplay): void => {
-    setTaskToDelete(taskDisplay);
-    setDeleteDialogOpen(true);
-  };
-
-  // Confirm delete (legacy - can be removed if not used elsewhere)
-  const handleConfirmDelete = (): void => {
-    if (taskToDelete) {
-      deleteTaskMutation.mutate(taskToDelete.id);
-    }
-    setTaskToDelete(null);
   };
 
   // Handle delete selected tasks
@@ -505,17 +486,6 @@ function RequestListingPage(): JSX.Element {
         open={addTasksDialogOpen}
         onClose={() => setAddTasksDialogOpen(false)}
         onAddTasks={handleAddTasks}
-      />
-
-      {/* Delete Task Confirmation Dialog */}
-      <DeleteTaskDialog
-        open={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setTaskToDelete(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        taskUrl={taskToDelete?.url}
       />
 
       {/* Export Password Dialog */}

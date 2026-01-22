@@ -10,6 +10,7 @@ import {
   ChangeStatus,
 } from "../pages/RequestListingPage/types";
 import { getAllTasks, updateTasks } from "./mockDb";
+import { TmsApi } from "./tmsApi";
 
 /**
  * Generate seed data for the mock database
@@ -319,6 +320,24 @@ function simulateNetworkLatency(): Promise<void> {
 
 /**
  * List all tasks
+ *
+ * TODO: Replace with real API call
+ * Endpoint: GET /api/tms/requests
+ * Query params: None (could add pagination/filtering later)
+ * Response: Task[]
+ *
+ * Response should be a composite view joining:
+ * - TMS_Request (base request data)
+ * - TMS_Request_Event (latest event per requestId)
+ * - Col_Request (collection status from R-segment)
+ *
+ * Backend should:
+ * 1. Query TMS_Request collection
+ * 2. For each request, find latest TMS_Request_Event by requestId + max(createdTime)
+ * 3. For each request, find latest Col_Request by requestId (if exists)
+ * 4. Merge data into Task objects
+ * 5. Derive changeStatus from latestEvent.eventType + status
+ * 6. Derive depth from backcrawl fields
  */
 export async function listTasks(): Promise<Task[]> {
   await simulateNetworkLatency();
@@ -328,6 +347,20 @@ export async function listTasks(): Promise<Task[]> {
 
 /**
  * Create a new task
+ *
+ * TODO: Replace with real API call
+ * Endpoint: POST /api/tms/requests
+ * Request body: Omit<Task, "id" | "createdTime" | "user" | "userGroup" | "version" | "changeStatus" | "latestEvent" | "collectionStatus" | "colEndTime" | "estimatedColDuration">
+ * Response: Task (newly created with all generated fields)
+ *
+ * Backend should:
+ * 1. Generate new UUID for requestId
+ * 2. Extract user + userGroup from auth context (JWT/session)
+ * 3. Create TMS_Request document with version=1
+ * 4. Create TMS_Request_Event with eventType=CREATE, status=LOCAL, version=1
+ * 5. Return composite Task object (no Col_Request data yet for new tasks)
+ * 6. Derive changeStatus as ADDED (CREATE + LOCAL)
+ * 7. Derive depth from backcrawl fields in payload
  */
 export async function createTask(
   payload: Omit<
@@ -500,6 +533,21 @@ export async function deleteTask(id: string): Promise<void> {
 /**
  * Delete multiple tasks (creates DELETE events for each)
  * Skips tasks that already have DELETE events to avoid duplicates
+ *
+ * TODO: Replace with real API call
+ * Endpoint: POST /api/tms/events/bulk-delete
+ * Request body: { taskIds: string[] }
+ * Response: void (204 No Content)
+ *
+ * Backend should:
+ * 1. Extract user + userGroup from auth context
+ * 2. For each requestId in taskIds:
+ *    a. Find latest TMS_Request_Event for that requestId
+ *    b. If latest event is already DELETE, skip (avoid duplicates)
+ *    c. Otherwise, create new TMS_Request_Event with eventType=DELETE, status=LOCAL
+ *    d. Increment version on TMS_Request document
+ * 3. Return 204 No Content on success
+ * 4. Client will refetch tasks to get updated state
  */
 export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
   await simulateNetworkLatency();
@@ -548,6 +596,21 @@ export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
 /**
  * Mark tasks with LOCAL events as PENDING_UPLOAD
  * This happens after XML export
+ *
+ * TODO: Replace with real API call
+ * Endpoint: POST /api/tms/events/mark-pending-upload
+ * Request body: { taskIds: string[] }
+ * Response: void (204 No Content)
+ *
+ * Backend should:
+ * 1. For each requestId in taskIds:
+ *    a. Find latest TMS_Request_Event for that requestId
+ *    b. If event.status is LOCAL, create new event with same eventType but status=PENDING_UPLOAD
+ *    c. Increment version on TMS_Request document
+ *    d. New event should copy eventType (CREATE/UPDATE/DELETE) from previous event
+ * 2. This marks events as "exported to XML and ready for B-segment upload"
+ * 3. Return 204 No Content on success
+ * 4. Client will refetch tasks to get updated state
  */
 export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void> {
   await simulateNetworkLatency();
@@ -594,6 +657,25 @@ export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void>
  * Special handling:
  * - Tasks with DELETE eventType are removed from database
  * - Tasks with CREATE/UPDATE eventType are marked as UPLOADED
+ *
+ * TODO: Replace with real API call (DevTools only)
+ * Endpoint: POST /api/devtools/simulate-upload
+ * Request body: None
+ * Response: { updatedRequestIds: string[], createdEvents: number }
+ *
+ * Backend should:
+ * 1. Find all TMS_Request_Event with status=PENDING_UPLOAD
+ * 2. For each event:
+ *    a. If eventType is DELETE:
+ *       - Remove TMS_Request document (hard delete)
+ *       - Remove all TMS_Request_Event documents for that requestId
+ *       - Clean up any Col_Request data
+ *    b. If eventType is CREATE/UPDATE:
+ *       - Create new TMS_Request_Event with same eventType but status=UPLOADED
+ *       - Set uploadedTime field to current timestamp
+ *       - Increment version on TMS_Request document
+ * 3. Return summary of affected requestIds and event count
+ * 4. This simulates B-segment successfully processing the XML upload
  */
 export async function markPendingUploadAsUploaded(): Promise<{
   updatedRequestIds: string[];
@@ -657,6 +739,21 @@ export async function markPendingUploadAsUploaded(): Promise<{
  * Export selected tasks to XML payload
  * Simulates backend API call that returns task data for selected IDs
  * This is used for ad-hoc "Download Selected XML" feature
+ *
+ * TODO: Replace with real API call
+ * Endpoint: POST /api/tms/export/selected
+ * Request body: { taskIds: string[] }
+ * Response: { tasks: Task[] }
+ *
+ * Backend should:
+ * 1. Query TMS_Request documents by _id in taskIds array
+ * 2. For each request, find latest TMS_Request_Event
+ * 3. For each request, find latest Col_Request (if exists)
+ * 4. Merge data into Task objects (same structure as listTasks)
+ * 5. Return array of Task objects
+ *
+ * IMPORTANT: This is READ-ONLY - do NOT modify event statuses
+ * This endpoint is for ad-hoc XML export without affecting workflow state
  */
 export async function exportTasksToXmlPayload(taskIds: string[]): Promise<{ tasks: Task[] }> {
   // Simulate network latency (200-800ms)
@@ -672,3 +769,13 @@ export async function exportTasksToXmlPayload(taskIds: string[]): Promise<{ task
   // Return in expected JSON structure
   return { tasks: selectedTasks };
 }
+
+// Export as TmsApi interface implementation
+export const mockApi: TmsApi = {
+  listTasks,
+  createTask,
+  markTasksAsPendingUpload,
+  exportTasksToXmlPayload,
+  deleteSelectedTasks,
+  markPendingUploadAsUploaded,
+};
