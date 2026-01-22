@@ -3,17 +3,31 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import HistoryIcon from "@mui/icons-material/History";
+import InfoIcon from "@mui/icons-material/Info";
 import RemoveIcon from "@mui/icons-material/Remove";
 import { Box, Button, Chip, Tooltip, Typography, CircularProgress } from "@mui/material";
-import { GridColDef, GridRowSelectionModel, NdsDataGrid, type NdsBaseSelectOption } from "@nautilus/nds-react";
+import {
+  GridColDef,
+  GridRowSelectionModel,
+  NdsDataGrid,
+  type NdsBaseSelectOption,
+} from "@nautilus/nds-react";
 import { JSX, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useCreateTaskMutation, useDeleteTaskMutation, useTasksQuery, useExportSelectedTasksMutation } from "../../queries/tasks";
+import {
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
+  useTasksQuery,
+  useExportSelectedTasksMutation,
+  useDeleteSelectedTasksMutation,
+} from "../../queries/tasks";
 import { priorityColors, strikethroughDimmedStyle } from "../../utils/textStyling";
 import { generateXml, encryptXml, downloadXmlFile } from "../../utils/xmlGenerator";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
 import DeleteTaskDialog from "./components/DeleteTaskDialog";
+import DeleteSelectedConfirmDialog from "./components/DeleteSelectedConfirmDialog";
 import ExportPasswordDialog from "../ReviewChangesPage/components/ExportPasswordDialog";
+import TaskDetailsDialog from "./components/TaskDetailsDialog";
 import { tasksToDisplay } from "./helpers";
 import { ChangeStatus, EventStatus, EventType, Task, TaskDisplay } from "./types";
 
@@ -30,16 +44,20 @@ function RequestListingPage(): JSX.Element {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<TaskDisplay | null>(null);
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
-    type: 'include',
+    type: "include",
     ids: new Set(),
   });
   const [exportPasswordDialogOpen, setExportPasswordDialogOpen] = useState(false);
+  const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] = useState(false);
+  const [taskDetailsDialogOpen, setTaskDetailsDialogOpen] = useState(false);
+  const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<Task | null>(null);
 
   // Use React Query to fetch tasks
   const { data: tasks = [] } = useTasksQuery();
   const createTaskMutation = useCreateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
   const exportSelectedMutation = useExportSelectedTasksMutation();
+  const deleteSelectedMutation = useDeleteSelectedTasksMutation();
 
   // Convert tasks to display format
   const rows: TaskDisplay[] = useMemo(() => tasksToDisplay(tasks), [tasks]);
@@ -84,18 +102,48 @@ function RequestListingPage(): JSX.Element {
     });
   };
 
-  // Handle delete task
+  // Handle delete task (legacy - can be removed if not used elsewhere)
   const handleDeleteTask = (taskDisplay: TaskDisplay): void => {
     setTaskToDelete(taskDisplay);
     setDeleteDialogOpen(true);
   };
 
-  // Confirm delete
+  // Confirm delete (legacy - can be removed if not used elsewhere)
   const handleConfirmDelete = (): void => {
     if (taskToDelete) {
       deleteTaskMutation.mutate(taskToDelete.id);
     }
     setTaskToDelete(null);
+  };
+
+  // Handle delete selected tasks
+  const handleDeleteSelected = (): void => {
+    if (rowSelectionModel.ids.size === 0) {
+      return;
+    }
+    setDeleteSelectedDialogOpen(true);
+  };
+
+  // Confirm delete selected
+  const handleConfirmDeleteSelected = (): void => {
+    const selectedIds = Array.from(rowSelectionModel.ids).map((id) => String(id));
+    deleteSelectedMutation.mutate(selectedIds, {
+      onSuccess: () => {
+        // Clear selection after successful deletion
+        setRowSelectionModel({ type: "include", ids: new Set() });
+        setDeleteSelectedDialogOpen(false);
+      },
+    });
+  };
+
+  // Handle view details
+  const handleViewDetails = (taskDisplay: TaskDisplay): void => {
+    // Find the full task object from the tasks array
+    const task = tasks.find((t) => t.id === taskDisplay.id);
+    if (task) {
+      setSelectedTaskForDetails(task);
+      setTaskDetailsDialogOpen(true);
+    }
   };
 
   // Handle export selected tasks
@@ -133,7 +181,7 @@ function RequestListingPage(): JSX.Element {
       downloadXmlFile(encryptedXml, `tms_selected_export_${timestamp}.xml`);
 
       // Clear selection after successful export
-      setRowSelectionModel({ type: 'include', ids: new Set() });
+      setRowSelectionModel({ type: "include", ids: new Set() });
     } catch (error) {
       console.error("Failed to export selected tasks:", error);
       // Error handling could be improved with user notification
@@ -324,8 +372,28 @@ function RequestListingPage(): JSX.Element {
           ADD TASKS
         </Button>
 
-        {/* Right side - Export Selected, Review Changes buttons */}
+        {/* Right side - Delete Selected, Download Selected XML, Review Changes buttons */}
         <Box sx={{ display: "flex", gap: 2 }}>
+          {/* Delete Selected button */}
+          <Tooltip
+            title={rowSelectionModel.ids.size === 0 ? "Select one or more tasks to delete" : ""}
+            arrow
+            placement="top"
+          >
+            <span>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                disabled={rowSelectionModel.ids.size === 0}
+                onClick={handleDeleteSelected}
+                sx={{ textTransform: "none" }}
+              >
+                DELETE SELECTED ({rowSelectionModel.ids.size})
+              </Button>
+            </span>
+          </Tooltip>
+
           {/* Download Selected XML button */}
           <Tooltip
             title={rowSelectionModel.ids.size === 0 ? "Select at least one task to download" : ""}
@@ -385,10 +453,10 @@ function RequestListingPage(): JSX.Element {
         }}
         menuItems={[
           {
-            label: "Delete",
-            icon: <DeleteIcon color="action" />,
+            label: "View Details",
+            icon: <InfoIcon color="action" />,
             onClick: (params: TaskDisplay): void => {
-              handleDeleteTask(params);
+              handleViewDetails(params);
             },
           },
         ]}
@@ -455,6 +523,24 @@ function RequestListingPage(): JSX.Element {
         open={exportPasswordDialogOpen}
         onClose={() => setExportPasswordDialogOpen(false)}
         onConfirm={handleExportPasswordConfirm}
+      />
+
+      {/* Delete Selected Confirmation Dialog */}
+      <DeleteSelectedConfirmDialog
+        open={deleteSelectedDialogOpen}
+        onClose={() => setDeleteSelectedDialogOpen(false)}
+        onConfirm={handleConfirmDeleteSelected}
+        selectedCount={rowSelectionModel.ids.size}
+      />
+
+      {/* Task Details Dialog */}
+      <TaskDetailsDialog
+        open={taskDetailsDialogOpen}
+        onClose={() => {
+          setTaskDetailsDialogOpen(false);
+          setSelectedTaskForDetails(null);
+        }}
+        task={selectedTaskForDetails}
       />
     </Box>
   );

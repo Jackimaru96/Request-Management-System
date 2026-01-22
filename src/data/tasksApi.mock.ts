@@ -498,6 +498,54 @@ export async function deleteTask(id: string): Promise<void> {
 }
 
 /**
+ * Delete multiple tasks (creates DELETE events for each)
+ * Skips tasks that already have DELETE events to avoid duplicates
+ */
+export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
+  await simulateNetworkLatency();
+
+  const currentTime = new Date();
+  const currentUser = "current_user"; // TODO: Get from auth context
+  const currentUserGroup = "default_group"; // TODO: Get from auth context
+
+  updateTasks((allTasks) =>
+    allTasks.map((task) => {
+      // Only process tasks in the selected IDs
+      if (!taskIds.includes(task.id)) {
+        return task;
+      }
+
+      // Skip if already deleted (avoid duplicate DELETE events)
+      if (task.latestEvent && task.latestEvent.eventType === EventType.DELETE) {
+        return task;
+      }
+
+      // Create delete event
+      const eventId = `evt-delete-${task.id}-${Date.now()}`;
+      const event = {
+        _id: eventId,
+        requestId: task.id,
+        eventType: EventType.DELETE,
+        status: EventStatus.LOCAL,
+        payload: JSON.stringify({ action: "delete" }),
+        user: currentUser,
+        userGroup: currentUserGroup,
+        createdTime: currentTime,
+        version: task.version + 1,
+      };
+
+      // Update task with delete event
+      return {
+        ...task,
+        version: task.version + 1,
+        latestEvent: event,
+        changeStatus: deriveChangeStatus(event), // Will be ChangeStatus.DELETED
+      };
+    }),
+  );
+}
+
+/**
  * Mark tasks with LOCAL events as PENDING_UPLOAD
  * This happens after XML export
  */

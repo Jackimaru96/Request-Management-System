@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
-import { listTasks, createTask, updateTask, deleteTask, markTasksAsPendingUpload, exportTasksToXmlPayload } from "../data/tasksApi.mock";
+import { listTasks, createTask, updateTask, deleteTask, markTasksAsPendingUpload, exportTasksToXmlPayload, deleteSelectedTasks } from "../data/tasksApi.mock";
 import { Task } from "../pages/RequestListingPage/types";
 
 // Query key for tasks
@@ -134,5 +134,21 @@ export function useExportSelectedTasksMutation(): UseMutationResult<{ tasks: Tas
   return useMutation({
     mutationFn: exportTasksToXmlPayload,
     // No cache updates needed - this is read-only export
+  });
+}
+
+/**
+ * Hook to delete multiple selected tasks
+ * Creates DELETE events for each task (skips already deleted tasks)
+ */
+export function useDeleteSelectedTasksMutation(): UseMutationResult<void, Error, string[]> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteSelectedTasks,
+    onSuccess: () => {
+      // Refetch to get the updated tasks with DELETE events
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+    },
   });
 }

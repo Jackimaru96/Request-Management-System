@@ -61,7 +61,7 @@ function ReviewChangesPage(): JSX.Element {
     {
       field: "changeStatus",
       headerName: "",
-      width: 80,
+      width: 120,
       sortable: false,
       disableColumnMenu: true,
       align: "center",
