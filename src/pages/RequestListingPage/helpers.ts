@@ -106,6 +106,7 @@ export function taskToDisplay(task: Task): TaskDisplay {
     depth: formatDepth(task.depth),
     priority: getPriorityLabel(task.priority),
     country: task.country || "-",
+    zone: task.zone || "-", // Zone field for R-segment
     status: task.collectionStatus ? toCamelCase(task.collectionStatus) : "-", // Convert to Camel Case
     lastCollected: task.colEndTime ? formatDate(task.colEndTime) : "", // From Col_Request.colEndTime
   };

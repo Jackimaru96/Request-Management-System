@@ -12,8 +12,9 @@ export interface MockDbSchema {
 /**
  * Current schema version
  * Increment this when making breaking changes to the schema
+ * v2: Added zone field, updated seed data for Stage 1 workflow with APPROVED status
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /**
  * localStorage key for the mock database

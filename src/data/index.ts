@@ -19,6 +19,8 @@ export {
   markTasksAsPendingUpload,
   exportTasksToXmlPayload,
   deleteSelectedTasks,
+  revertSelectedTasks,
+  hardDeleteTasks,
   markPendingUploadAsUploaded,
   seedTasks,
 } from "./tasksApiMock";

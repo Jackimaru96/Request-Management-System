@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
-import { listTasks, createTask, markTasksAsPendingUpload, exportTasksToXmlPayload, deleteSelectedTasks } from "../data";
+import { listTasks, createTask, markTasksAsPendingUpload, exportTasksToXmlPayload, deleteSelectedTasks, revertSelectedTasks } from "../data";
 import { Task } from "../pages/RequestListingPage/types";
+import { RevertResult } from "../data/tmsApi";
 
 // Query key for tasks
 export const TASKS_QUERY_KEY = ["tasks"];
@@ -84,6 +85,10 @@ export function useExportSelectedTasksMutation(): UseMutationResult<{ tasks: Tas
 /**
  * Hook to delete multiple selected tasks
  * Creates DELETE events for each task (skips already deleted tasks)
+ *
+ * Stage 1 Workflow:
+ * - Only allows deletion for tasks with PENDING_UPLOAD or UPLOADED status
+ * - Creates DELETE event with auto-approval (LOCAL → APPROVED)
  */
 export function useDeleteSelectedTasksMutation(): UseMutationResult<void, Error, string[]> {
   const queryClient = useQueryClient();
@@ -92,6 +97,30 @@ export function useDeleteSelectedTasksMutation(): UseMutationResult<void, Error,
     mutationFn: deleteSelectedTasks,
     onSuccess: () => {
       // Refetch to get the updated tasks with DELETE events
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+    },
+  });
+}
+
+/**
+ * Hook to revert selected tasks (discard local/approved changes)
+ *
+ * Stage 1 Workflow:
+ * - For newly created tasks with only LOCAL/APPROVED events: hard delete
+ * - Per sync doc: "you may only revert a current event that is of status local or approved"
+ *
+ * TODO: Update with real API
+ * Endpoint: POST /api/tms/requests/revert
+ * Body: { requestIds: string[] }
+ * Returns: { revertedRequestIds: string[] }
+ */
+export function useRevertSelectedTasksMutation(): UseMutationResult<RevertResult, Error, string[]> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: revertSelectedTasks,
+    onSuccess: () => {
+      // Refetch to get the updated task list (reverted tasks are removed)
       queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
     },
   });

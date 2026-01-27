@@ -9,6 +9,27 @@ export enum RequestType {
   LIVESTREAM = "LIVESTREAM",
 }
 
+export enum Platform {
+  FACEBOOK = "FACEBOOK",
+  TWITTER = "TWITTER",
+  INSTAGRAM = "INSTAGRAM",
+  NEWS = "NEWS",
+  OTHERS = "OTHERS",
+  XIAOHONGSHU = "XIAOHONGSHU",
+  WEIBO = "WEIBO",
+  TIKTOK = "TIKTOK",
+}
+
+export enum ContentType {
+  PAGE = "PAGE",
+  PEOPLE = "PEOPLE",
+  LIVESTREAM = "LIVESTREAM",
+  FOLLOWING = "FOLLOWING",
+  FOLLOWER = "FOLLOWER",
+  SEARCH = "SEARCH",
+  ABOUT = "ABOUT",
+}
+
 // Priority enum - maps to TMS_Request.priority (stored as int in DB)
 export enum Priority {
   URGENT = 0,
@@ -58,10 +79,11 @@ export enum CollectionStatus {
 
 // UI Change Status - derived from TMS_Request_Event for visual indicators
 export enum ChangeStatus {
-  ADDED = "added", // CREATE/UPDATE eventType with LOCAL status
-  DELETED = "deleted", // DELETE eventType with LOCAL status
+  ADDED = "added", // CREATE/UPDATE eventType with LOCAL or APPROVED status
+  DELETED = "deleted", // DELETE eventType with LOCAL or APPROVED status
   UPLOADED = "uploaded", // UPLOADED status (successfully uploaded to W)
   PENDING_UPLOAD = "pending_upload", // PENDING_UPLOAD status (waiting for upload)
+  CONFLICT = "conflict", // CONFLICT status (event arrived too late)
 }
 
 // ========================================
@@ -99,28 +121,29 @@ export type Depth = DepthLastHours | DepthLastDays | DepthDateRange;
  * This is a single document per request that gets updated in place
  */
 export interface TmsRequest {
-  _id: string; // Unique UUID for the request
-  url: string;
-  requestType: RequestType;
-  priority: Priority;
-  contentType: string;
-  createdTime: Date;
-  userGroup: string;
-  version: number; // Increments with each event
-
-  // Optional fields
   backcrawlDepth?: number; // in days
-  backcrawlStartTime?: Date;
   backcrawlEndTime?: Date;
-  country?: string;
+  backcrawlStartTime?: Date;
+  contentType: ContentType;
   cutOffTime?: Date; // for LIVESTREAM
   endCollectionTime?: Date; // for RECURRING
   isAlwaysRun?: boolean;
   isCollectPopularPostOnly?: boolean;
+  startCollectionTime: Date;
+  url: string;
+  _id: string; // Unique UUID for the request
+  archived: boolean;
+  country?: string;
+  createdTime: Date;
+  platform?: Platform;
+  priority: Priority;
   recurringFreq?: number; // in hours
-  startCollectionTime?: Date;
+  requestType: RequestType;
   tags?: string[];
   title?: string;
+  userGroup: string;
+  version: number; // Increments with each event
+  zone: string;
 }
 
 /**
@@ -129,18 +152,16 @@ export interface TmsRequest {
  */
 export interface TmsRequestEvent {
   _id: string; // Unique UUID for this event
-  requestId: string; // Links to TmsRequest._id
+  approvedBy?: string; // User who approved (or "SYSTEM-AUTO")
+  createdTime: Date;
   eventType: EventType; // CREATE, UPDATE, DELETE, PAUSE, RESUME
-  status: EventStatus; // LOCAL, APPROVED, PENDING_UPLOAD, UPLOADED
-  version: number; // Version of the request at time of this event
   payload: string; // Stringified JSON of request fields for XML export
+  requestId: string; // Links to TmsRequest._id
+  status: EventStatus; // LOCAL, APPROVED, PENDING_UPLOAD, UPLOADED
+  uploadedTime: Date; // When event was uploaded
   user: string; // User who created this event
   userGroup: string;
-  createdTime: Date;
-
-  // Optional fields
-  approvedBy?: string; // User who approved (or "SYSTEM-AUTO")
-  uploadedTime?: Date; // When event was uploaded
+  version: number; // Version of the request at time of this event
 }
 
 // ========================================
@@ -209,6 +230,7 @@ export interface TaskDisplay {
   depth: string; // Formatted string like "Last 2 hours", "Last 5 days", or "2024-01-01 to 2024-01-31"
   priority: string; // Priority label (e.g., "Urgent", "High", etc.)
   country: string;
+  zone: string; // Zone field (e.g., "W", "G", "R", "-")
   status: string; // Collection status (from Col_Request, formatted in Camel Case)
   lastCollected: string; // Formatted date string (from Col_Request.colEndTime)
 }
@@ -250,10 +272,21 @@ export interface XmlPayload {
 /**
  * Helper function to derive ChangeStatus from TmsRequestEvent
  * This determines which visual indicator to show in the UI
+ *
+ * Stage 1 Workflow (per S->R Segment Sync doc):
+ * - LOCAL and APPROVED statuses show as pending changes (+ for create, - for delete)
+ * - PENDING_UPLOAD shows as awaiting upload (blue dot)
+ * - UPLOADED shows as successfully uploaded
+ * - CONFLICT shows as conflict (event arrived too late)
  */
 export function deriveChangeStatus(event?: TmsRequestEvent): ChangeStatus | null {
   if (!event) {
     return null;
+  }
+
+  // If event has CONFLICT status, show conflict indicator
+  if (event.status === EventStatus.CONFLICT) {
+    return ChangeStatus.CONFLICT;
   }
 
   // If event is uploaded, show uploaded status
@@ -266,8 +299,9 @@ export function deriveChangeStatus(event?: TmsRequestEvent): ChangeStatus | null
     return ChangeStatus.PENDING_UPLOAD;
   }
 
-  // If event is local (not yet exported)
-  if (event.status === EventStatus.LOCAL) {
+  // If event is local or approved (not yet exported to XML)
+  // Per sync doc: "local → approved → pending_upload → uploaded"
+  if (event.status === EventStatus.LOCAL || event.status === EventStatus.APPROVED) {
     // CREATE or UPDATE shows as added (+)
     if (event.eventType === EventType.CREATE || event.eventType === EventType.UPDATE) {
       return ChangeStatus.ADDED;
