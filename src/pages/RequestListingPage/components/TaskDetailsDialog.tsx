@@ -18,7 +18,13 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Task } from "../types";
-import { formatDate, formatFrequency, formatDepth, getPriorityLabel, toCamelCase } from "../helpers";
+import {
+  formatDate,
+  formatFrequency,
+  formatDepth,
+  getPriorityLabel,
+  toCamelCase,
+} from "../helpers";
 
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -38,15 +44,13 @@ function TaskDetailsDialog(props: TaskDetailsDialogProps): JSX.Element {
     task.requestType.charAt(0).toUpperCase() + task.requestType.slice(1).toLowerCase();
 
   // Format frequency for display
-  const frequencyDisplay = formatFrequency(task.requestType, task.recurringFreq);
+  const frequencyDisplay = formatFrequency(task.requestType, task.recurringFreqHours);
 
   // Format depth for display
   const depthDisplay = formatDepth(task.depth);
 
   // Format collection status
-  const collectionStatusDisplay = task.collectionStatus
-    ? toCamelCase(task.collectionStatus)
-    : "-";
+  const collectionStatusDisplay = task.collectionStatus ? toCamelCase(task.collectionStatus) : "-";
 
   // Format last collected
   const lastCollectedDisplay = task.colEndTime ? formatDate(task.colEndTime) : "-";
@@ -57,9 +61,7 @@ function TaskDetailsDialog(props: TaskDetailsDialogProps): JSX.Element {
     : "-";
 
   // Format collection end time
-  const collectionEndDisplay = task.endCollectionTime
-    ? formatDate(task.endCollectionTime)
-    : "N/A";
+  const collectionEndDisplay = task.endCollectionTime ? formatDate(task.endCollectionTime) : "N/A";
 
   // Mock tasking history (if real history exists in future, replace this)
   const taskingHistory = task.latestEvent

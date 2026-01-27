@@ -1,4 +1,12 @@
-import { Task, TaskDisplay, Depth, PRIORITY_LABELS, Priority, RequestType, DepthType } from "./types";
+import {
+  Task,
+  TaskDisplay,
+  Depth,
+  PRIORITY_LABELS,
+  Priority,
+  RequestType,
+  DepthType,
+} from "./types";
 
 /**
  * Convert text to Camel Case for display
@@ -102,7 +110,7 @@ export function taskToDisplay(task: Task): TaskDisplay {
     changeStatus: task.changeStatus,
     url: task.url,
     taskType: toCamelCase(task.requestType), // Convert to Camel Case
-    frequency: formatFrequency(task.requestType, task.recurringFreq),
+    frequency: formatFrequency(task.requestType, task.recurringFreqHours),
     depth: formatDepth(task.depth),
     priority: getPriorityLabel(task.priority),
     country: task.country || "-",

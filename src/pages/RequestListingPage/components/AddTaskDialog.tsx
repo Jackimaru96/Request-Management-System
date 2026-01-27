@@ -140,10 +140,10 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       priority,
       // Required W parameters - these would come from a platform selection in a real form
       contentType: "post", // Default value, should be configurable
-      estimatedColDuration: 60, // Default 60 minutes, should be calculated
+      estimatedColDurationMins: 60, // Default 60 minutes, should be calculated
 
       // Optional fields
-      backcrawlDepth,
+      backcrawlDepthDays: backcrawlDepth,
       backcrawlStartTime,
       backcrawlEndTime,
       country: country || undefined,
@@ -152,7 +152,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
         requestType === RequestType.RECURRING ? collectionEndDate || undefined : undefined,
       isAlwaysRun: false,
       isCollectPopularPostOnly: collectPopularOnly,
-      recurringFreq: requestType === RequestType.RECURRING ? recurringFreq : undefined,
+      recurringFreqHours: requestType === RequestType.RECURRING ? recurringFreq : undefined,
       startCollectionTime: collectionStartDate,
       tags: [],
       title: undefined,

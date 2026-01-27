@@ -66,8 +66,8 @@ export function serializePayload(task: Task): XmlPayload {
   };
 
   // Optional fields with proper conversions
-  if (task.backcrawlDepth !== undefined) {
-    payload.a = task.backcrawlDepth; // int (no conversion needed)
+  if (task.backcrawlDepthDays !== undefined) {
+    payload.a = task.backcrawlDepthDays; // int (no conversion needed)
   }
 
   if (task.backcrawlEndTime) {
@@ -94,8 +94,8 @@ export function serializePayload(task: Task): XmlPayload {
     payload.h = boolToInt(task.isCollectPopularPostOnly); // bool → 0/1
   }
 
-  if (task.recurringFreq !== undefined) {
-    payload.k = task.recurringFreq; // int (no conversion needed)
+  if (task.recurringFreqHours !== undefined) {
+    payload.k = task.recurringFreqHours; // int (no conversion needed)
   }
 
   if (task.startCollectionTime) {

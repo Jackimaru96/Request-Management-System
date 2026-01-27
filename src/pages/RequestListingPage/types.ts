@@ -105,7 +105,7 @@ export type DepthLastHours = {
 
 export type DepthLastDays = {
   type: DepthType.LAST_DAYS;
-  days: number; // Maps to backcrawlDepth
+  days: number; // Maps to backcrawlDepthDays
 };
 
 export type DepthDateRange = {
@@ -121,7 +121,7 @@ export type Depth = DepthLastHours | DepthLastDays | DepthDateRange;
  * This is a single document per request that gets updated in place
  */
 export interface TmsRequest {
-  backcrawlDepth?: number; // in days
+  backcrawlDepthDays?: number; // in days
   backcrawlEndTime?: Date;
   backcrawlStartTime?: Date;
   contentType: ContentType;
@@ -137,7 +137,7 @@ export interface TmsRequest {
   createdTime: Date;
   platform?: Platform;
   priority: Priority;
-  recurringFreq?: number; // in hours
+  recurringFreqHours?: number; // in hours
   requestType: RequestType;
   tags?: string[];
   title?: string;
@@ -184,7 +184,7 @@ export interface Task {
   version: number; // TMS_Request.version
 
   // Optional fields from TMS_Request
-  backcrawlDepth?: number;
+  backcrawlDepthDays?: number;
   backcrawlStartTime?: Date;
   backcrawlEndTime?: Date;
   country?: string;
@@ -193,7 +193,7 @@ export interface Task {
   isAlwaysRun?: boolean;
   isCollectPopularPostOnly?: boolean;
   platform?: string;
-  recurringFreq?: number;
+  recurringFreqHours?: number;
   startCollectionTime?: Date;
   tags?: string[];
   title?: string;
@@ -206,7 +206,7 @@ export interface Task {
   // From Col_Request (most recent collection in R-Segment)
   collectionStatus?: CollectionStatus;
   colEndTime?: Date; // Last Collected timestamp
-  estimatedColDuration?: number;
+  estimatedColDurationMins?: number;
 
   // UI-only fields (derived)
   depth: Depth; // Derived from backcrawl fields
@@ -250,7 +250,7 @@ export interface TaskDisplay {
  * Use xmlSerializers.ts helpers for conversion from Task to XmlPayload.
  */
 export interface XmlPayload {
-  a?: number; // backcrawlDepth (int)
+  a?: number; // backcrawlDepthDays (int)
   b?: number; // backcrawlEndTime (epoch milliseconds)
   c?: number; // backcrawlStartTime (epoch milliseconds)
   d?: number; // cutOffTime (epoch milliseconds)
@@ -259,7 +259,7 @@ export interface XmlPayload {
   g?: number; // isAlwaysRun (0 or 1)
   h?: number; // isCollectPopularPostOnly (0 or 1)
   j: number; // priority (enum value 0-3)
-  k?: number; // recurringFreq (hours as int)
+  k?: number; // recurringFreqHours (hours as int)
   m: string; // requestType (enum value as string: ADHOC/RECURRING/LIVESTREAM)
   n?: number; // startCollectionTime (epoch milliseconds)
   p: string; // url (string)

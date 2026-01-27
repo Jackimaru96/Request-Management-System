@@ -246,7 +246,7 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                             <TableCell>{task.url}</TableCell>
                             <TableCell>{toCamelCase(task.requestType)}</TableCell>
                             <TableCell>
-                              {formatFrequency(task.requestType, task.recurringFreq)}
+                              {formatFrequency(task.requestType, task.recurringFreqHours)}
                             </TableCell>
                             <TableCell>{formatDepth(task.depth)}</TableCell>
                             <TableCell>

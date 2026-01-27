@@ -35,7 +35,7 @@ export function seedTasks(): Task[] {
       createdTime: new Date("2026-01-15T10:00:00"),
       userGroup: "analysts",
       version: 2,
-      recurringFreq: 3,
+      recurringFreqHours: 3,
       country: "Australia",
       zone: "W",
       depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -55,7 +55,7 @@ export function seedTasks(): Task[] {
       user: "user123",
       collectionStatus: undefined,
       colEndTime: undefined,
-      estimatedColDuration: undefined,
+      estimatedColDurationMins: undefined,
       changeStatus: ChangeStatus.ADDED,
     },
 
@@ -88,7 +88,7 @@ export function seedTasks(): Task[] {
       user: "user123",
       collectionStatus: CollectionStatus.COLLECTING,
       colEndTime: new Date("2026-01-14T09:15:00"),
-      estimatedColDuration: undefined,
+      estimatedColDurationMins: undefined,
       changeStatus: ChangeStatus.ADDED,
     },
 
@@ -102,7 +102,7 @@ export function seedTasks(): Task[] {
       createdTime: new Date("2026-01-14T08:45:00"),
       userGroup: "analysts",
       version: 3,
-      recurringFreq: 2,
+      recurringFreqHours: 2,
       country: "United Kingdom",
       zone: "-",
       depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -122,7 +122,7 @@ export function seedTasks(): Task[] {
       user: "user456",
       collectionStatus: CollectionStatus.COMPLETED,
       colEndTime: new Date("2026-01-14T08:45:00"),
-      estimatedColDuration: 45,
+      estimatedColDurationMins: 45,
       changeStatus: ChangeStatus.DELETED,
     },
 
@@ -139,7 +139,7 @@ export function seedTasks(): Task[] {
       createdTime: new Date("2026-01-14T10:45:00"),
       userGroup: "analysts",
       version: 3,
-      recurringFreq: 1,
+      recurringFreqHours: 1,
       country: "Singapore",
       zone: "R",
       depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -158,7 +158,7 @@ export function seedTasks(): Task[] {
       user: "user789",
       collectionStatus: undefined,
       colEndTime: undefined,
-      estimatedColDuration: undefined,
+      estimatedColDurationMins: undefined,
       changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
 
@@ -172,7 +172,7 @@ export function seedTasks(): Task[] {
       createdTime: new Date("2026-01-14T07:20:00"),
       userGroup: "analysts",
       version: 3,
-      recurringFreq: 4,
+      recurringFreqHours: 4,
       country: "Japan",
       zone: "W",
       depth: { type: DepthType.LAST_DAYS, days: 3 },
@@ -191,7 +191,7 @@ export function seedTasks(): Task[] {
       user: "user456",
       collectionStatus: undefined,
       colEndTime: undefined,
-      estimatedColDuration: undefined,
+      estimatedColDurationMins: undefined,
       changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
 
@@ -228,7 +228,7 @@ export function seedTasks(): Task[] {
       user: "user123",
       collectionStatus: undefined,
       colEndTime: undefined,
-      estimatedColDuration: undefined,
+      estimatedColDurationMins: undefined,
       changeStatus: ChangeStatus.PENDING_UPLOAD,
     },
 
@@ -244,7 +244,7 @@ export function seedTasks(): Task[] {
       createdTime: new Date("2026-01-14T10:30:00"),
       userGroup: "analysts",
       version: 2,
-      recurringFreq: 3,
+      recurringFreqHours: 3,
       country: "United States",
       zone: "W",
       depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -263,7 +263,7 @@ export function seedTasks(): Task[] {
       user: "user123",
       collectionStatus: CollectionStatus.COMPLETED,
       colEndTime: new Date("2026-01-14T10:30:00"),
-      estimatedColDuration: 120,
+      estimatedColDurationMins: 120,
       changeStatus: ChangeStatus.UPLOADED,
     },
 
@@ -277,7 +277,7 @@ export function seedTasks(): Task[] {
       createdTime: new Date("2026-01-14T10:00:00"),
       userGroup: "analysts",
       version: 2,
-      recurringFreq: 2,
+      recurringFreqHours: 2,
       country: "France",
       zone: "G",
       depth: { type: DepthType.LAST_HOURS, hours: 2 },
@@ -296,7 +296,7 @@ export function seedTasks(): Task[] {
       user: "user789",
       collectionStatus: CollectionStatus.COLLECTING,
       colEndTime: new Date("2026-01-14T10:00:00"),
-      estimatedColDuration: undefined,
+      estimatedColDurationMins: undefined,
       changeStatus: ChangeStatus.UPLOADED,
     },
 
@@ -330,7 +330,7 @@ export function seedTasks(): Task[] {
       user: "user456",
       collectionStatus: CollectionStatus.COMPLETED,
       colEndTime: new Date("2026-01-14T06:30:00"),
-      estimatedColDuration: 120,
+      estimatedColDurationMins: 120,
       changeStatus: ChangeStatus.CONFLICT,
     },
   ];
@@ -448,7 +448,7 @@ export async function createTask(
     // From Col_Request - no collection yet for new tasks
     collectionStatus: undefined,
     colEndTime: undefined,
-    estimatedColDuration: undefined,
+    estimatedColDurationMins: undefined,
     // UI-derived: APPROVED + CREATE = ADDED
     changeStatus: deriveChangeStatus(approvedEvent),
   };
