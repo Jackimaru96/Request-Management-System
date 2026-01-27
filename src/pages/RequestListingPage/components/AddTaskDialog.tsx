@@ -26,7 +26,14 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { Task, RequestType, Priority, Depth, DepthType } from "../types";
+import {
+  RequestType,
+  Priority,
+  DepthType,
+  CreateTaskFormInput,
+  CreateTaskApiPayload,
+  mapCreateTaskFormToApi,
+} from "../types";
 
 // ISO Country names - using a subset for now, can be expanded with a library
 const COUNTRIES = [
@@ -60,9 +67,7 @@ const COUNTRIES = [
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
-  onAddTask: (
-    task: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">,
-  ) => void;
+  onAddTask: (payload: CreateTaskApiPayload) => void;
 }
 
 function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
@@ -110,42 +115,32 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       return;
     }
 
-    // Build depth object
-    let depth: Depth;
-    let backcrawlDepth: number | undefined;
+    // Determine backcrawl fields based on depth type selection
+    let backcrawlDepthDays: number | undefined;
     let backcrawlStartTime: Date | undefined;
     let backcrawlEndTime: Date | undefined;
 
-    if (depthType === DepthType.LAST_HOURS) {
-      depth = { type: DepthType.LAST_HOURS, hours: 2 };
-    } else if (depthType === DepthType.LAST_DAYS) {
-      depth = { type: DepthType.LAST_DAYS, days: lastXDays };
-      backcrawlDepth = lastXDays;
-    } else {
-      depth = {
-        type: DepthType.DATE_RANGE,
-        startDate: dateRangeStart,
-        endDate: dateRangeEnd || undefined,
-      };
+    if (depthType === DepthType.LAST_DAYS) {
+      backcrawlDepthDays = lastXDays;
+    } else if (depthType === DepthType.DATE_RANGE) {
       backcrawlStartTime = dateRangeStart;
       backcrawlEndTime = dateRangeEnd || undefined;
     }
+    // For LAST_HOURS, no backcrawl fields are set (default behavior)
 
-    const newTask: Omit<
-      Task,
-      "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus"
-    > = {
+    // Build form input with Date objects (UI layer)
+    const formInput: CreateTaskFormInput = {
       url: url.trim(),
       requestType: requestType,
       priority,
-      // Required W parameters - these would come from a platform selection in a real form
-      contentType: "post", // Default value, should be configurable
-      estimatedColDurationMins: 60, // Default 60 minutes, should be calculated
+      contentType: "PAGE", // Default value, should be configurable
 
-      // Optional fields
-      backcrawlDepthDays: backcrawlDepth,
+      // Backcrawl fields based on depth type
+      backcrawlDepthDays,
       backcrawlStartTime,
       backcrawlEndTime,
+
+      // Other optional fields
       country: country || undefined,
       cutOffTime: requestType === RequestType.LIVESTREAM ? cutOffTime || undefined : undefined,
       endCollectionTime:
@@ -156,13 +151,16 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       startCollectionTime: collectionStartDate,
       tags: [],
       title: undefined,
-
-      // UI-only field
-      depth,
-      version: 1,
     };
 
-    onAddTask(newTask);
+    // Convert Date objects to ISO strings using the mapper
+    // This is the SINGLE place where Date → ISO conversion happens
+    const apiPayload = mapCreateTaskFormToApi(formInput);
+
+    // TODO: Update with real API
+    // The apiPayload is ready to be sent to the backend API
+    // All date fields are now ISO timestamp strings
+    onAddTask(apiPayload);
     handleClose();
   };
 

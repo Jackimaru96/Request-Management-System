@@ -23,7 +23,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { Task } from "../types";
+import { deriveDepthFromTask, Task } from "../types";
 import { formatFrequency, formatDepth, getPriorityLabel, toCamelCase } from "../helpers";
 import AddTaskDialog from "./AddTaskDialog";
 import { priorityColors } from "../../../utils/textStyling";
@@ -248,7 +248,7 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                             <TableCell>
                               {formatFrequency(task.requestType, task.recurringFreqHours)}
                             </TableCell>
-                            <TableCell>{formatDepth(task.depth)}</TableCell>
+                            <TableCell>{formatDepth(deriveDepthFromTask(task))}</TableCell>
                             <TableCell>
                               <Chip
                                 label={priorityLabel}

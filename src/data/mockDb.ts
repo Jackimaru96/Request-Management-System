@@ -5,6 +5,9 @@ import { seedTasks } from "./tasksApiMock";
 /**
  * Get the database from localStorage
  * Returns null if not found or corrupted
+ *
+ * NOTE: All date fields are stored as ISO timestamp strings.
+ * No Date object revival is needed since the new Task interface uses strings.
  */
 function getDbFromStorage(): MockDbSchema | null {
   try {
@@ -35,8 +38,7 @@ function getDbFromStorage(): MockDbSchema | null {
       return null;
     }
 
-    // Revive Date objects
-    parsed.tasks = reviveDates(parsed.tasks);
+    // No Date revival needed - all dates are ISO strings in the new Task interface
 
     return parsed as MockDbSchema;
   } catch (error) {
@@ -58,36 +60,6 @@ function saveDbToStorage(db: MockDbSchema): void {
   }
 }
 
-/**
- * Recursively revive Date objects in JSON structure
- */
-function reviveDates<T>(obj: T): T {
-  if (obj === null || obj === undefined) {
-    return obj;
-  }
-
-  if (typeof obj === "string") {
-    // Check if it's an ISO date string
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(obj)) {
-      return new Date(obj) as unknown as T;
-    }
-    return obj;
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map((item) => reviveDates(item)) as unknown as T;
-  }
-
-  if (typeof obj === "object") {
-    const revived: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      revived[key] = reviveDates(value);
-    }
-    return revived as T;
-  }
-
-  return obj;
-}
 
 /**
  * Initialize the database with seed data

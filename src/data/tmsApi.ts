@@ -9,9 +9,12 @@
  * - Export/Commit: APPROVED → PENDING_UPLOAD
  * - Upload feedback: PENDING_UPLOAD → UPLOADED
  * - Delete: Creates DELETE event, hard delete only if all events are LOCAL/APPROVED
+ *
+ * IMPORTANT: All date fields in Task and API payloads are ISO timestamp strings.
+ * No Date objects should cross the API boundary.
  */
 
-import { Task } from "../pages/RequestListingPage/types";
+import { Task, CreateTaskApiPayload } from "../pages/RequestListingPage/types";
 
 /**
  * Result type for devtools upload simulation
@@ -61,27 +64,13 @@ export interface TmsApi {
    * 2. Create TMS_Request_Event with eventType=CREATE, status=LOCAL, version=1
    * 3. Auto-approve: Create second event with eventType=CREATE, status=APPROVED, version=2
    *
-   * Request body: Omit<Task, derived/generated fields>
+   * Request body: CreateTaskApiPayload (all dates as ISO strings)
    * Response: Task (with latestEvent showing APPROVED status)
    *
-   * @param taskData - Task data without id, createdTime, user, version, etc.
+   * @param payload - Task data with all dates as ISO timestamp strings
    * @returns Promise<Task> - Newly created task with APPROVED status
    */
-  createTask(
-    taskData: Omit<
-      Task,
-      | "id"
-      | "createdTime"
-      | "user"
-      | "userGroup"
-      | "version"
-      | "changeStatus"
-      | "latestEvent"
-      | "collectionStatus"
-      | "colEndTime"
-      | "estimatedColDuration"
-    >,
-  ): Promise<Task>;
+  createTask(payload: CreateTaskApiPayload): Promise<Task>;
 
   /**
    * Mark tasks as PENDING_UPLOAD (called during XML export/commit)

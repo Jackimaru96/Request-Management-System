@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
 import { listTasks, createTask, markTasksAsPendingUpload, exportTasksToXmlPayload, deleteSelectedTasks, revertSelectedTasks } from "../data";
-import { Task } from "../pages/RequestListingPage/types";
+import { Task, CreateTaskApiPayload } from "../pages/RequestListingPage/types";
 import { RevertResult } from "../data/tmsApi";
 
 // Query key for tasks
@@ -8,6 +8,7 @@ export const TASKS_QUERY_KEY = ["tasks"];
 
 /**
  * Hook to fetch all tasks
+ * Returns Task objects with all dates as ISO timestamp strings
  */
 export function useTasksQuery(): UseQueryResult<Task[], Error> {
   return useQuery({
@@ -19,24 +20,16 @@ export function useTasksQuery(): UseQueryResult<Task[], Error> {
 
 /**
  * Hook to create a new task
+ *
+ * Accepts CreateTaskApiPayload where all dates are ISO timestamp strings.
+ * The UI should use mapCreateTaskFormToApi() to convert Date objects before calling mutate().
+ *
+ * TODO: Update with real API
+ * Endpoint: POST /api/tms/requests
+ * Body: CreateTaskApiPayload
+ * Returns: Task
  */
-export function useCreateTaskMutation(): UseMutationResult<
-  Task,
-  Error,
-  Omit<
-    Task,
-    | "id"
-    | "createdTime"
-    | "user"
-    | "userGroup"
-    | "version"
-    | "changeStatus"
-    | "latestEvent"
-    | "collectionStatus"
-    | "colEndTime"
-    | "estimatedColDuration"
-  >
-> {
+export function useCreateTaskMutation(): UseMutationResult<Task, Error, CreateTaskApiPayload> {
   const queryClient = useQueryClient();
 
   return useMutation({

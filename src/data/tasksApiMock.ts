@@ -5,41 +5,58 @@ import {
   CollectionStatus,
   RequestType,
   Priority,
-  DepthType,
-  deriveChangeStatus,
-  ChangeStatus,
   TmsRequestEvent,
+  CreateTaskApiPayload,
 } from "../pages/RequestListingPage/types";
 import { getAllTasks, updateTasks } from "./mockDb";
 import { TmsApi, RevertResult } from "./tmsApi";
 
 /**
+ * Helper to create a latestEvent object without user/userGroup (per Task interface)
+ */
+function createLatestEvent(
+  event: TmsRequestEvent
+): Omit<TmsRequestEvent, "user" | "userGroup"> {
+  return {
+    _id: event._id,
+    approvedBy: event.approvedBy,
+    createdTime: event.createdTime,
+    eventType: event.eventType,
+    payload: event.payload,
+    requestId: event.requestId,
+    status: event.status,
+    uploadedTime: event.uploadedTime,
+    version: event.version,
+  };
+}
+
+/**
  * Generate seed data for the mock database
- * Updated to match the mockup screenshots with:
- * - Zone field
- * - Correct statuses per Stage 1 workflow
- * - Mix of APPROVED (Changes tab), PENDING_UPLOAD (Exports tab), UPLOADED, CONFLICT
+ * Updated to match the new Task interface:
+ * - All dates are ISO timestamp strings
+ * - No depth or changeStatus (these are derived in UI)
+ * - latestEvent excludes user/userGroup
+ * - collectionStatus, colEndTime, estimatedColDurationMins use null for missing values
  */
 export function seedTasks(): Task[] {
   return [
     // ====== CHANGES TAB: Tasks with APPROVED status (ready to export) ======
-    // These show in Review Updates → Changes tab with + or - indicators
 
     // Task 1: CREATE with APPROVED status (+ indicator) - metrics-api.cloud/collection
     {
       id: "1",
+      archived: false,
       url: "metrics-api.cloud/collection",
       requestType: RequestType.RECURRING,
       priority: Priority.HIGH,
-      contentType: "post",
-      createdTime: new Date("2026-01-15T10:00:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-15T10:00:00.000+08:00",
       userGroup: "analysts",
       version: 2,
       recurringFreqHours: 3,
       country: "Australia",
       zone: "W",
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-1-approved",
         requestId: "1",
         eventType: EventType.CREATE,
@@ -47,32 +64,31 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "create" }),
         user: "user123",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-15T10:00:00"),
-        uploadedTime: new Date("2026-01-15T10:00:00"),
+        createdTime: "2026-01-15T10:00:00.000+08:00",
         version: 2,
         approvedBy: "SYSTEM-AUTO",
-      },
+      }),
       user: "user123",
-      collectionStatus: undefined,
-      colEndTime: undefined,
-      estimatedColDurationMins: undefined,
-      changeStatus: ChangeStatus.ADDED,
+      collectionStatus: null,
+      colEndTime: null,
+      estimatedColDurationMins: null,
     },
 
-    // Task 2: UPDATE with APPROVED status (pencil/edit indicator) - climate-monitor.global/api/temp
+    // Task 2: UPDATE with APPROVED status - climate-monitor.global/api/temp
     {
       id: "2",
+      archived: false,
       url: "climate-monitor.global/api/temp",
       requestType: RequestType.ADHOC,
       priority: Priority.HIGH,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T09:15:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T09:15:00.000+08:00",
       userGroup: "analysts",
       version: 3,
+      backcrawlDepthDays: 2,
       country: "Germany",
       zone: "G",
-      depth: { type: DepthType.LAST_DAYS, days: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-2-approved",
         requestId: "2",
         eventType: EventType.UPDATE,
@@ -80,33 +96,31 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "update" }),
         user: "user123",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T09:15:00"),
-        uploadedTime: new Date("2026-01-14T09:15:00"),
+        createdTime: "2026-01-14T09:15:00.000+08:00",
         version: 3,
         approvedBy: "SYSTEM-AUTO",
-      },
+      }),
       user: "user123",
       collectionStatus: CollectionStatus.COLLECTING,
-      colEndTime: new Date("2026-01-14T09:15:00"),
-      estimatedColDurationMins: undefined,
-      changeStatus: ChangeStatus.ADDED,
+      colEndTime: "2026-01-14T09:15:00.000+08:00",
+      estimatedColDurationMins: null,
     },
 
     // Task 3: DELETE with APPROVED status (- indicator) - weather-data.science/metrics
     {
       id: "3",
+      archived: false,
       url: "weather-data.science/metrics",
       requestType: RequestType.RECURRING,
       priority: Priority.MEDIUM,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T08:45:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T08:45:00.000+08:00",
       userGroup: "analysts",
       version: 3,
       recurringFreqHours: 2,
       country: "United Kingdom",
       zone: "-",
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-3-delete-approved",
         requestId: "3",
         eventType: EventType.DELETE,
@@ -114,36 +128,33 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "delete" }),
         user: "user456",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T08:45:00"),
-        uploadedTime: new Date("2026-01-14T08:45:00"),
+        createdTime: "2026-01-14T08:45:00.000+08:00",
         version: 3,
         approvedBy: "SYSTEM-AUTO",
-      },
+      }),
       user: "user456",
       collectionStatus: CollectionStatus.COMPLETED,
-      colEndTime: new Date("2026-01-14T08:45:00"),
+      colEndTime: "2026-01-14T08:45:00.000+08:00",
       estimatedColDurationMins: 45,
-      changeStatus: ChangeStatus.DELETED,
     },
 
     // ====== EXPORTS TAB: Tasks with PENDING_UPLOAD status (awaiting upload) ======
-    // These show in Review Updates → Exports tab
 
     // Task 4: PENDING_UPLOAD - global-climate.net/sensors
     {
       id: "4",
+      archived: false,
       url: "global-climate.net/sensors",
       requestType: RequestType.RECURRING,
       priority: Priority.URGENT,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T10:45:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T10:45:00.000+08:00",
       userGroup: "analysts",
       version: 3,
       recurringFreqHours: 1,
       country: "Singapore",
       zone: "R",
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-4-pending",
         requestId: "4",
         eventType: EventType.CREATE,
@@ -151,32 +162,31 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "create" }),
         user: "user789",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T10:45:00"),
-        uploadedTime: new Date("2026-01-14T10:45:00"),
+        createdTime: "2026-01-14T10:45:00.000+08:00",
         version: 3,
-      },
+      }),
       user: "user789",
-      collectionStatus: undefined,
-      colEndTime: undefined,
-      estimatedColDurationMins: undefined,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
+      collectionStatus: null,
+      colEndTime: null,
+      estimatedColDurationMins: null,
     },
 
     // Task 5: PENDING_UPLOAD - environment-tracker.io/data
     {
       id: "5",
+      archived: false,
       url: "environment-tracker.io/data",
       requestType: RequestType.RECURRING,
       priority: Priority.HIGH,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T07:20:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T07:20:00.000+08:00",
       userGroup: "analysts",
       version: 3,
       recurringFreqHours: 4,
+      backcrawlDepthDays: 3,
       country: "Japan",
       zone: "W",
-      depth: { type: DepthType.LAST_DAYS, days: 3 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-5-pending",
         requestId: "5",
         eventType: EventType.CREATE,
@@ -184,36 +194,32 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "create" }),
         user: "user456",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T07:20:00"),
-        uploadedTime: new Date("2026-01-14T07:20:00"),
+        createdTime: "2026-01-14T07:20:00.000+08:00",
         version: 3,
-      },
+      }),
       user: "user456",
-      collectionStatus: undefined,
-      colEndTime: undefined,
-      estimatedColDurationMins: undefined,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
+      collectionStatus: null,
+      colEndTime: null,
+      estimatedColDurationMins: null,
     },
 
-    // Task 6: PENDING_UPLOAD - eco-sensors.worldwide/api
+    // Task 6: PENDING_UPLOAD - eco-sensors.worldwide/api (with date range)
     {
       id: "6",
+      archived: false,
       url: "eco-sensors.worldwide/api",
       requestType: RequestType.LIVESTREAM,
       priority: Priority.MEDIUM,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T05:30:00"),
+      contentType: "LIVESTREAM",
+      createdTime: "2026-01-14T05:30:00.000+08:00",
       userGroup: "analysts",
       version: 3,
-      cutOffTime: new Date("2026-01-31T23:59:59"),
+      cutOffTime: "2026-01-31T23:59:59.000+08:00",
+      backcrawlStartTime: "2026-01-01T00:00:00.000+08:00",
+      backcrawlEndTime: "2026-01-31T00:00:00.000+08:00",
       country: "Canada",
       zone: "G",
-      depth: {
-        type: DepthType.DATE_RANGE,
-        startDate: new Date("2026-01-01"),
-        endDate: new Date("2026-01-31"),
-      },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-6-pending",
         requestId: "6",
         eventType: EventType.CREATE,
@@ -221,34 +227,32 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "create" }),
         user: "user123",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T05:30:00"),
-        uploadedTime: new Date("2026-01-14T05:30:00"),
+        createdTime: "2026-01-14T05:30:00.000+08:00",
         version: 3,
-      },
+      }),
       user: "user123",
-      collectionStatus: undefined,
-      colEndTime: undefined,
-      estimatedColDurationMins: undefined,
-      changeStatus: ChangeStatus.PENDING_UPLOAD,
+      collectionStatus: null,
+      colEndTime: null,
+      estimatedColDurationMins: null,
     },
 
     // ====== MAIN TABLE: Tasks with UPLOADED status (active in R-segment) ======
 
-    // Task 7: UPLOADED with warning indicator - api.example.com/v1/climate-data
+    // Task 7: UPLOADED - api.example.com/v1/climate-data
     {
       id: "7",
+      archived: false,
       url: "api.example.com/v1/climate-data",
       requestType: RequestType.RECURRING,
       priority: Priority.URGENT,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T10:30:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T10:30:00.000+08:00",
       userGroup: "analysts",
       version: 2,
       recurringFreqHours: 3,
       country: "United States",
       zone: "W",
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-7-uploaded",
         requestId: "7",
         eventType: EventType.CREATE,
@@ -256,32 +260,31 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "create" }),
         user: "user123",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T10:30:00"),
-        uploadedTime: new Date("2026-01-14T10:30:00"),
+        createdTime: "2026-01-14T10:30:00.000+08:00",
+        uploadedTime: "2026-01-14T10:30:00.000+08:00",
         version: 2,
-      },
+      }),
       user: "user123",
       collectionStatus: CollectionStatus.COMPLETED,
-      colEndTime: new Date("2026-01-14T10:30:00"),
+      colEndTime: "2026-01-14T10:30:00.000+08:00",
       estimatedColDurationMins: 120,
-      changeStatus: ChangeStatus.UPLOADED,
     },
 
     // Task 8: UPLOADED - temperature-monitor.io/latest
     {
       id: "8",
+      archived: false,
       url: "temperature-monitor.io/latest",
       requestType: RequestType.RECURRING,
       priority: Priority.HIGH,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T10:00:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T10:00:00.000+08:00",
       userGroup: "analysts",
       version: 2,
       recurringFreqHours: 2,
       country: "France",
       zone: "G",
-      depth: { type: DepthType.LAST_HOURS, hours: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-8-uploaded",
         requestId: "8",
         eventType: EventType.CREATE,
@@ -289,15 +292,14 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "create" }),
         user: "user789",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T10:00:00"),
-        uploadedTime: new Date("2026-01-14T10:00:00"),
+        createdTime: "2026-01-14T10:00:00.000+08:00",
+        uploadedTime: "2026-01-14T10:00:00.000+08:00",
         version: 2,
-      },
+      }),
       user: "user789",
       collectionStatus: CollectionStatus.COLLECTING,
-      colEndTime: new Date("2026-01-14T10:00:00"),
-      estimatedColDurationMins: undefined,
-      changeStatus: ChangeStatus.UPLOADED,
+      colEndTime: "2026-01-14T10:00:00.000+08:00",
+      estimatedColDurationMins: null,
     },
 
     // ====== CONFLICTS TAB: Task with CONFLICT status ======
@@ -305,17 +307,18 @@ export function seedTasks(): Task[] {
     // Task 9: CONFLICT - data-hub.research.org/endpoints
     {
       id: "9",
+      archived: false,
       url: "data-hub.research.org/endpoints",
       requestType: RequestType.ADHOC,
       priority: Priority.MEDIUM,
-      contentType: "post",
-      createdTime: new Date("2026-01-14T04:15:00"),
+      contentType: "PAGE",
+      createdTime: "2026-01-14T04:15:00.000+08:00",
       userGroup: "analysts",
       version: 3,
+      backcrawlDepthDays: 2,
       country: "India",
       zone: "R",
-      depth: { type: DepthType.LAST_DAYS, days: 2 },
-      latestEvent: {
+      latestEvent: createLatestEvent({
         _id: "evt-9-conflict",
         requestId: "9",
         eventType: EventType.UPDATE,
@@ -323,15 +326,14 @@ export function seedTasks(): Task[] {
         payload: JSON.stringify({ action: "update" }),
         user: "user456",
         userGroup: "analysts",
-        createdTime: new Date("2026-01-14T04:15:00"),
-        uploadedTime: new Date("2026-01-14T04:20:00"),
+        createdTime: "2026-01-14T04:15:00.000+08:00",
+        uploadedTime: "2026-01-14T04:20:00.000+08:00",
         version: 3,
-      },
+      }),
       user: "user456",
       collectionStatus: CollectionStatus.COMPLETED,
-      colEndTime: new Date("2026-01-14T06:30:00"),
+      colEndTime: "2026-01-14T06:30:00.000+08:00",
       estimatedColDurationMins: 120,
-      changeStatus: ChangeStatus.CONFLICT,
     },
   ];
 }
@@ -377,48 +379,45 @@ export async function listTasks(): Promise<Task[]> {
  *
  * TODO: Update with real API
  * Endpoint: POST /api/tms/requests
- * Request body: { request: TmsRequestCreateInput }
- * Returns: {
- *   request: TmsRequest,
- *   events: TmsRequestEvent[]  // includes LOCAL then APPROVED create events
+ * Request body: CreateTaskApiPayload (all dates as ISO strings)
+ * Expected backend payload shape:
+ * {
+ *   url: string,
+ *   requestType: "ADHOC" | "RECURRING" | "LIVESTREAM",
+ *   priority: 0 | 1 | 2 | 3,
+ *   contentType?: string,
+ *   backcrawlDepthDays?: number,
+ *   backcrawlStartTime?: string (ISO),
+ *   backcrawlEndTime?: string (ISO),
+ *   country?: string,
+ *   cutOffTime?: string (ISO),
+ *   endCollectionTime?: string (ISO),
+ *   isAlwaysRun?: boolean,
+ *   isCollectPopularPostOnly?: boolean,
+ *   platform?: string,
+ *   recurringFreqHours?: number,
+ *   startCollectionTime?: string (ISO),
+ *   tags?: string[],
+ *   title?: string,
+ *   zone?: string
  * }
+ * Returns: Task (with all dates as ISO strings)
  *
  * Stage 1 Workflow (per S->R Segment Sync doc):
  * 1. Create TMS_Request document with version=1
  * 2. Create TMS_Request_Event E1: eventType=CREATE, status=LOCAL, version=1
  * 3. Auto-approve: Create TMS_Request_Event E2: eventType=CREATE, status=APPROVED, version=2
  * 4. Return Task with latestEvent = E2 (APPROVED)
- *
- * Per sync doc principle #9: "Whenever an event is approved, all the previous
- * events that are local will be updated to approved"
  */
-export async function createTask(
-  payload: Omit<
-    Task,
-    | "id"
-    | "createdTime"
-    | "user"
-    | "userGroup"
-    | "version"
-    | "changeStatus"
-    | "latestEvent"
-    | "collectionStatus"
-    | "colEndTime"
-    | "estimatedColDuration"
-  >,
-): Promise<Task> {
+export async function createTask(payload: CreateTaskApiPayload): Promise<Task> {
   await simulateNetworkLatency();
 
-  const currentTime = new Date();
+  const currentTime = new Date().toISOString();
   const currentUser = "current_user"; // TODO: Get from auth context
   const currentUserGroup = "default_group"; // TODO: Get from auth context
 
   idCounter = idCounter + 1;
   const taskId = `task-${idCounter}`;
-
-  // Stage 1: In a real implementation, we would create LOCAL event first (E1)
-  // then auto-approve to create APPROVED event (E2). For the mock, we only
-  // store the final APPROVED event since we don't persist event history.
 
   // Stage 1: Auto-approve - create APPROVED event (E2)
   const approvedEventId = `evt-${taskId}-approved`;
@@ -430,27 +429,47 @@ export async function createTask(
     payload: JSON.stringify({ action: "create", data: payload }),
     user: currentUser,
     userGroup: currentUserGroup,
-    createdTime: new Date(currentTime.getTime() + 1), // Slightly after local
-    uploadedTime: new Date(currentTime.getTime() + 1),
+    createdTime: currentTime,
     version: 2,
-    approvedBy: "SYSTEM-AUTO", // Auto-approval for Stage 1
+    approvedBy: "SYSTEM-AUTO",
   };
 
   const newTask: Task = {
-    ...payload,
+    // From payload (all dates already ISO strings from mapper)
+    url: payload.url,
+    requestType: payload.requestType,
+    priority: payload.priority,
+    contentType: payload.contentType,
+    backcrawlDepthDays: payload.backcrawlDepthDays,
+    backcrawlStartTime: payload.backcrawlStartTime,
+    backcrawlEndTime: payload.backcrawlEndTime,
+    country: payload.country,
+    cutOffTime: payload.cutOffTime,
+    endCollectionTime: payload.endCollectionTime,
+    isAlwaysRun: payload.isAlwaysRun,
+    isCollectPopularPostOnly: payload.isCollectPopularPostOnly,
+    platform: payload.platform,
+    recurringFreqHours: payload.recurringFreqHours,
+    startCollectionTime: payload.startCollectionTime,
+    tags: payload.tags,
+    title: payload.title,
+    zone: payload.zone,
+
+    // Generated by API
     id: taskId,
     createdTime: currentTime,
     user: currentUser,
     userGroup: currentUserGroup,
-    version: 2, // Version 2 after auto-approval
-    // Latest event is the APPROVED event
-    latestEvent: approvedEvent,
+    version: 2,
+    archived: false,
+
+    // Latest event (without user/userGroup per Task interface)
+    latestEvent: createLatestEvent(approvedEvent),
+
     // From Col_Request - no collection yet for new tasks
-    collectionStatus: undefined,
-    colEndTime: undefined,
-    estimatedColDurationMins: undefined,
-    // UI-derived: APPROVED + CREATE = ADDED
-    changeStatus: deriveChangeStatus(approvedEvent),
+    collectionStatus: null,
+    colEndTime: null,
+    estimatedColDurationMins: null,
   };
 
   // Add to MockDB
@@ -462,24 +481,15 @@ export async function createTask(
 /**
  * Update an existing task (creates a new event)
  * To be released in Milestone 2 - not part of Stage 1
+ *
+ * TODO: Update with real API
+ * Endpoint: PATCH /api/tms/requests/:id
+ * Request body: Partial<CreateTaskApiPayload>
+ * Returns: Task
  */
 export async function updateTask(
   id: string,
-  patch: Partial<
-    Omit<
-      Task,
-      | "id"
-      | "createdTime"
-      | "user"
-      | "userGroup"
-      | "version"
-      | "changeStatus"
-      | "latestEvent"
-      | "collectionStatus"
-      | "colEndTime"
-      | "estimatedColDuration"
-    >
-  >,
+  patch: Partial<CreateTaskApiPayload>
 ): Promise<Task> {
   await simulateNetworkLatency();
 
@@ -489,7 +499,7 @@ export async function updateTask(
     throw new Error(`Task with id ${id} not found`);
   }
 
-  const currentTime = new Date();
+  const currentTime = new Date().toISOString();
   const currentUser = "current_user"; // TODO: Get from auth context
   const currentUserGroup = "default_group"; // TODO: Get from auth context
   const eventId = `evt-update-${id}-${Date.now()}`;
@@ -506,7 +516,6 @@ export async function updateTask(
     user: currentUser,
     userGroup: currentUserGroup,
     createdTime: currentTime,
-    uploadedTime: currentTime,
     version: existingTask.version + 1,
   };
 
@@ -514,8 +523,7 @@ export async function updateTask(
     ...existingTask,
     ...patch,
     version: existingTask.version + 1,
-    latestEvent: event,
-    changeStatus: deriveChangeStatus(event),
+    latestEvent: createLatestEvent(event),
   };
 
   // Update in MockDB
@@ -527,6 +535,10 @@ export async function updateTask(
 /**
  * Delete a task (creates a DELETE event)
  * Single task version - used internally
+ *
+ * TODO: Update with real API
+ * Endpoint: DELETE /api/tms/requests/:id
+ * Returns: void
  */
 export async function deleteTask(id: string): Promise<void> {
   await simulateNetworkLatency();
@@ -537,14 +549,11 @@ export async function deleteTask(id: string): Promise<void> {
     throw new Error(`Task with id ${id} not found`);
   }
 
-  const currentTime = new Date();
+  const currentTime = new Date().toISOString();
   const currentUser = "current_user"; // TODO: Get from auth context
   const currentUserGroup = "default_group"; // TODO: Get from auth context
 
   const existingTask = tasks[taskIndex];
-
-  // Stage 1: In a real implementation, we would create LOCAL delete event first
-  // then auto-approve. For the mock, we only store the final APPROVED event.
 
   // Stage 1: Auto-approve - create APPROVED delete event
   const approvedEventId = `evt-delete-${id}-approved-${Date.now()}`;
@@ -556,8 +565,7 @@ export async function deleteTask(id: string): Promise<void> {
     payload: JSON.stringify({ action: "delete" }),
     user: currentUser,
     userGroup: currentUserGroup,
-    createdTime: new Date(currentTime.getTime() + 1),
-    uploadedTime: new Date(currentTime.getTime() + 1),
+    createdTime: currentTime,
     version: existingTask.version + 2,
     approvedBy: "SYSTEM-AUTO",
   };
@@ -566,8 +574,7 @@ export async function deleteTask(id: string): Promise<void> {
   const updatedTask: Task = {
     ...existingTask,
     version: existingTask.version + 2,
-    latestEvent: approvedEvent,
-    changeStatus: deriveChangeStatus(approvedEvent), // Will be ChangeStatus.DELETED
+    latestEvent: createLatestEvent(approvedEvent),
   };
 
   // Update in MockDB
@@ -581,27 +588,16 @@ export async function deleteTask(id: string): Promise<void> {
  * - Only processes tasks with PENDING_UPLOAD or UPLOADED status
  * - Creates DELETE event with LOCAL status, then auto-approves to APPROVED
  * - Skips tasks that already have DELETE events
- * - Per sync doc principle #7.4: "As long as one of the previous event is
- *   pending_upload or uploaded, a new Delete event needs to be created"
  *
  * TODO: Update with real API
  * Endpoint: POST /api/tms/events/bulk-delete
  * Request body: { taskIds: string[] }
  * Response: void (204 No Content)
- *
- * Backend should:
- * 1. Extract user + userGroup from auth context
- * 2. For each requestId in taskIds:
- *    a. Validate: latest event status must be PENDING_UPLOAD or UPLOADED
- *    b. If latest event is already DELETE, skip (avoid duplicates)
- *    c. Create LOCAL DELETE event, then APPROVED DELETE event
- *    d. Increment version on TMS_Request document
- * 3. Return 204 No Content on success
  */
 export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
   await simulateNetworkLatency();
 
-  const currentTime = new Date();
+  const currentTime = new Date().toISOString();
   const currentUser = "current_user"; // TODO: Get from auth context
   const currentUserGroup = "default_group"; // TODO: Get from auth context
 
@@ -613,20 +609,15 @@ export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
       }
 
       // Skip if already deleted (avoid duplicate DELETE events)
-      if (task.latestEvent && task.latestEvent.eventType === EventType.DELETE) {
+      if (task.latestEvent.eventType === EventType.DELETE) {
         return task;
       }
 
       // Stage 1 validation: Only allow deletion for PENDING_UPLOAD or UPLOADED tasks
-      // Per user requirement: "Allow delete only and only applies to tasks that are PENDING_UPLOAD, or UPLOADED"
-      const latestStatus = task.latestEvent?.status;
+      const latestStatus = task.latestEvent.status;
       if (latestStatus !== EventStatus.PENDING_UPLOAD && latestStatus !== EventStatus.UPLOADED) {
-        // Skip tasks that don't meet eligibility criteria
         return task;
       }
-
-      // Stage 1: In a real implementation, we would create LOCAL delete event first
-      // then auto-approve. For the mock, we only store the final APPROVED event.
 
       // Stage 1: Auto-approve - create APPROVED delete event
       const approvedEventId = `evt-delete-${task.id}-approved-${Date.now()}`;
@@ -638,8 +629,7 @@ export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
         payload: JSON.stringify({ action: "delete" }),
         user: currentUser,
         userGroup: currentUserGroup,
-        createdTime: new Date(currentTime.getTime() + 1),
-        uploadedTime: new Date(currentTime.getTime() + 1),
+        createdTime: currentTime,
         version: task.version + 2,
         approvedBy: "SYSTEM-AUTO",
       };
@@ -648,8 +638,7 @@ export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
       return {
         ...task,
         version: task.version + 2,
-        latestEvent: approvedEvent,
-        changeStatus: deriveChangeStatus(approvedEvent), // Will be ChangeStatus.DELETED
+        latestEvent: createLatestEvent(approvedEvent),
       };
     }),
   );
@@ -660,20 +649,12 @@ export async function deleteSelectedTasks(taskIds: string[]): Promise<void> {
  *
  * Stage 1 Workflow:
  * - For newly created tasks with only LOCAL/APPROVED events: hard delete
- * - Per sync doc principle #10: "you may only revert a current event that is
- *   of status local or approved and it must not be a Create event"
  * - For Stage 1, since we only have CREATE, revert means removing the task entirely
  *
  * TODO: Update with real API
  * Endpoint: POST /api/tms/requests/revert
  * Request body: { requestIds: string[] }
  * Response: { revertedRequestIds: string[] }
- *
- * Backend should:
- * 1. For each requestId, check if all events are LOCAL or APPROVED
- * 2. If so, hard delete the request and all its events
- * 3. If task has PENDING_UPLOAD or UPLOADED events, cannot revert (return error)
- * 4. Return list of successfully reverted request IDs
  */
 export async function revertSelectedTasks(taskIds: string[]): Promise<RevertResult> {
   await simulateNetworkLatency();
@@ -689,12 +670,8 @@ export async function revertSelectedTasks(taskIds: string[]): Promise<RevertResu
 
       // Check if task can be reverted
       // Per sync doc: can only revert if status is LOCAL or APPROVED
-      const latestStatus = task.latestEvent?.status;
-      if (
-        latestStatus === EventStatus.LOCAL ||
-        latestStatus === EventStatus.APPROVED ||
-        !task.latestEvent
-      ) {
+      const latestStatus = task.latestEvent.status;
+      if (latestStatus === EventStatus.LOCAL || latestStatus === EventStatus.APPROVED) {
         // Task is eligible for revert - remove it (hard delete)
         revertedRequestIds.push(task.id);
         return false; // Remove from list
@@ -733,27 +710,16 @@ export async function hardDeleteTasks(taskIds: string[]): Promise<void> {
  * Stage 1 Workflow:
  * - Only processes tasks with APPROVED status (per sync doc)
  * - Creates new event with same eventType but status=PENDING_UPLOAD
- * - Per sync doc principle #2: "When a request is downloaded as XML, it downloads
- *   all events linked to that request with status approved or pending_upload.
- *   All approved events will then be changed to pending_upload"
  *
  * TODO: Update with real API
  * Endpoint: POST /api/tms/events/mark-pending-upload
  * Request body: { taskIds: string[] }
  * Response: void (204 No Content)
- *
- * Backend should:
- * 1. For each requestId in taskIds:
- *    a. Find latest TMS_Request_Event for that requestId
- *    b. If event.status is APPROVED, create new event with status=PENDING_UPLOAD
- *    c. Also process LOCAL events (upgrade to PENDING_UPLOAD)
- *    d. Increment version on TMS_Request document
- * 2. Return 204 No Content on success
  */
 export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void> {
   await simulateNetworkLatency();
 
-  const currentTime = new Date();
+  const currentTime = new Date().toISOString();
 
   updateTasks((allTasks) =>
     allTasks.map((task) => {
@@ -763,30 +729,27 @@ export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void>
 
       // Only update tasks that have LOCAL or APPROVED events
       if (
-        !task.latestEvent ||
-        (task.latestEvent.status !== EventStatus.LOCAL &&
-          task.latestEvent.status !== EventStatus.APPROVED)
+        task.latestEvent.status !== EventStatus.LOCAL &&
+        task.latestEvent.status !== EventStatus.APPROVED
       ) {
         return task;
       }
 
-      // Create new PENDING_UPLOAD event
+      // Create new PENDING_UPLOAD event (latestEvent already excludes user/userGroup)
       const newEventId = `evt-pending-${task.id}-${Date.now()}`;
-      const newEvent: TmsRequestEvent = {
+      const newLatestEvent: Omit<TmsRequestEvent, "user" | "userGroup"> = {
         ...task.latestEvent,
         _id: newEventId,
         status: EventStatus.PENDING_UPLOAD,
         version: task.version + 1,
         createdTime: currentTime,
-        uploadedTime: currentTime,
       };
 
       // Update task with new event
       return {
         ...task,
         version: task.version + 1,
-        latestEvent: newEvent,
-        changeStatus: deriveChangeStatus(newEvent),
+        latestEvent: newLatestEvent,
       };
     }),
   );
@@ -805,19 +768,6 @@ export async function markTasksAsPendingUpload(taskIds: string[]): Promise<void>
  * Endpoint: POST /api/devtools/simulate-upload
  * Request body: None
  * Response: { updatedRequestIds: string[], createdEvents: number }
- *
- * Backend should:
- * 1. Find all TMS_Request_Event with status=PENDING_UPLOAD
- * 2. For each event:
- *    a. If eventType is DELETE:
- *       - Remove TMS_Request document (hard delete)
- *       - Remove all TMS_Request_Event documents for that requestId
- *       - Clean up any Col_Request data
- *    b. If eventType is CREATE/UPDATE:
- *       - Create new TMS_Request_Event with same eventType but status=UPLOADED
- *       - Set uploadedTime field to current timestamp
- *       - Increment version on TMS_Request document
- * 3. Return summary of affected requestIds and event count
  */
 export async function markPendingUploadAsUploaded(): Promise<{
   updatedRequestIds: string[];
@@ -825,7 +775,7 @@ export async function markPendingUploadAsUploaded(): Promise<{
 }> {
   await simulateNetworkLatency();
 
-  const currentTime = new Date();
+  const currentTime = new Date().toISOString();
   const updatedRequestIds: string[] = [];
   let createdEvents = 0;
 
@@ -834,7 +784,7 @@ export async function markPendingUploadAsUploaded(): Promise<{
 
     for (const task of allTasks) {
       // Only process tasks that have PENDING_UPLOAD events
-      if (!task.latestEvent || task.latestEvent.status !== EventStatus.PENDING_UPLOAD) {
+      if (task.latestEvent.status !== EventStatus.PENDING_UPLOAD) {
         processedTasks.push(task);
         continue;
       }
@@ -849,7 +799,7 @@ export async function markPendingUploadAsUploaded(): Promise<{
 
       // For CREATE/UPDATE events, create new UPLOADED event
       const newEventId = `evt-uploaded-${task.id}-${Date.now()}`;
-      const newEvent: TmsRequestEvent = {
+      const newLatestEvent: Omit<TmsRequestEvent, "user" | "userGroup"> = {
         ...task.latestEvent,
         _id: newEventId,
         status: EventStatus.UPLOADED,
@@ -866,8 +816,7 @@ export async function markPendingUploadAsUploaded(): Promise<{
       processedTasks.push({
         ...task,
         version: task.version + 1,
-        latestEvent: newEvent,
-        changeStatus: deriveChangeStatus(newEvent),
+        latestEvent: newLatestEvent,
       });
     }
 

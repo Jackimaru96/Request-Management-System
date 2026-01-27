@@ -87,6 +87,21 @@ export enum ChangeStatus {
 }
 
 // ========================================
+// COLLECTION DATA (from R-Segment)
+// ========================================
+
+/**
+ * Col_Request data from R-Segment
+ * Represents the collection status and timing information
+ * NOTE: colEndTime is an ISO timestamp string from the API
+ */
+export interface ColRequestData {
+  status?: CollectionStatus;
+  colEndTime?: string; // ISO timestamp
+  estimatedColDurationMins?: number;
+}
+
+// ========================================
 // DEPTH TYPES (Discriminated Union)
 // ========================================
 
@@ -98,6 +113,7 @@ export enum DepthType {
 }
 
 // Depth types - represents backcrawl configuration
+// NOTE: These are UI-derived types, NOT stored in the API response
 export type DepthLastHours = {
   type: DepthType.LAST_HOURS;
   hours: 2; // Always 2 hours
@@ -110,37 +126,39 @@ export type DepthLastDays = {
 
 export type DepthDateRange = {
   type: DepthType.DATE_RANGE;
-  startDate: Date; // Maps to backcrawlStartTime
-  endDate?: Date; // Maps to backcrawlEndTime
+  startDate: string; // ISO timestamp - derived from backcrawlStartTime
+  endDate?: string; // ISO timestamp - derived from backcrawlEndTime
 };
 
 export type Depth = DepthLastHours | DepthLastDays | DepthDateRange;
 
 /**
  * TMS_Request document - represents the current state of a task request in S-Segment
- * This is a single document per request that gets updated in place
+ * This is a single document per request that gets updated in place.
+ * This is the PERSISTED domain model matching the ERD.
+ * All date/time fields are ISO timestamp strings from the backend API.
  */
 export interface TmsRequest {
+  _id: string; // Unique UUID for the request
+  archived: boolean; // Whether the request is archived (soft delete)
   backcrawlDepthDays?: number; // in days
-  backcrawlEndTime?: Date;
-  backcrawlStartTime?: Date;
+  backcrawlEndTime?: string; // ISO timestamp
+  backcrawlStartTime?: string; // ISO timestamp
   contentType: ContentType;
-  cutOffTime?: Date; // for LIVESTREAM
-  endCollectionTime?: Date; // for RECURRING
+  country?: string;
+  createdTime: string; // ISO timestamp
+  cutOffTime?: string; // ISO timestamp - for LIVESTREAM
+  endCollectionTime?: string; // ISO timestamp - for RECURRING
   isAlwaysRun?: boolean;
   isCollectPopularPostOnly?: boolean;
-  startCollectionTime: Date;
-  url: string;
-  _id: string; // Unique UUID for the request
-  archived: boolean;
-  country?: string;
-  createdTime: Date;
   platform?: Platform;
   priority: Priority;
   recurringFreqHours?: number; // in hours
   requestType: RequestType;
+  startCollectionTime?: string; // ISO timestamp
   tags?: string[];
   title?: string;
+  url: string;
   userGroup: string;
   version: number; // Increments with each event
   zone: string;
@@ -148,42 +166,86 @@ export interface TmsRequest {
 
 /**
  * TMS_Request_Event document - append-only log of all actions on a request in S-Segment
- * Multiple events can exist for the same requestId
+ * Multiple events can exist for the same requestId.
+ * This is the PERSISTED domain model matching the ERD.
+ * All date/time fields are ISO timestamp strings from the backend API.
  */
 export interface TmsRequestEvent {
   _id: string; // Unique UUID for this event
   approvedBy?: string; // User who approved (or "SYSTEM-AUTO")
-  createdTime: Date;
+  createdTime: string; // ISO timestamp
   eventType: EventType; // CREATE, UPDATE, DELETE, PAUSE, RESUME
   payload: string; // Stringified JSON of request fields for XML export
   requestId: string; // Links to TmsRequest._id
-  status: EventStatus; // LOCAL, APPROVED, PENDING_UPLOAD, UPLOADED
-  uploadedTime: Date; // When event was uploaded
+  status: EventStatus; // LOCAL, APPROVED, PENDING_UPLOAD, UPLOADED, CONFLICT
+  uploadedTime?: string; // ISO timestamp - When event was uploaded (only set when status is UPLOADED)
   user: string; // User who created this event
   userGroup: string;
   version: number; // Version of the request at time of this event
 }
 
 // ========================================
-// COMPOSITE TASK INTERFACE
+// TASK (API Response Shape)
 // ========================================
 
 /**
- * Main Task interface - Composite view combining TMS_Request, latest TmsRequestEvent, and Col_Request
- * This is what the UI works with - combines data from all three sources
+ * Task - API response object combining TMS_Request, latest TmsRequestEvent, and Col_Request data.
+ * This represents the data returned from the backend API.
+ * All date/time fields are ISO timestamp strings.
+ *
+ * IMPORTANT: This interface does NOT contain UI-derived fields (depth, changeStatus).
+ * Use deriveDepthFromTask() and deriveChangeStatus() for UI display.
  */
 export interface Task {
   // From TMS_Request
   id: string; // TMS_Request._id
-  url: string; // TMS_Request.url
-  requestType: RequestType; // TMS_Request.requestType
-  priority: Priority; // TMS_Request.priority
-  contentType: string; // TMS_Request.contentType
-  createdTime: Date; // TMS_Request.createdTime
-  userGroup: string; // TMS_Request.userGroup
-  version: number; // TMS_Request.version
+  archived: boolean;
+  url: string;
+  requestType: RequestType;
+  priority: Priority;
+  contentType?: string;
+  createdTime: string; // ISO timestamp
+  userGroup: string;
+  version: number;
 
-  // Optional fields from TMS_Request
+  // Optional fields from TMS_Request (all dates are ISO timestamps)
+  backcrawlDepthDays?: number;
+  backcrawlStartTime?: string; // ISO timestamp
+  backcrawlEndTime?: string; // ISO timestamp
+  country?: string;
+  cutOffTime?: string; // ISO timestamp
+  endCollectionTime?: string; // ISO timestamp
+  isAlwaysRun?: boolean;
+  isCollectPopularPostOnly?: boolean;
+  platform?: Platform;
+  recurringFreqHours?: number;
+  startCollectionTime?: string; // ISO timestamp
+  tags?: string[];
+  title?: string;
+  zone?: string;
+
+  // From latest TmsRequestEvent (user/userGroup omitted, available at top level)
+  latestEvent: Omit<TmsRequestEvent, "user" | "userGroup">;
+  user: string; // From latest event
+
+  // From Col_Request (most recent collection in R-Segment)
+  collectionStatus: CollectionStatus | null;
+  colEndTime: string | null; // ISO timestamp
+  estimatedColDurationMins: number | null;
+}
+
+/**
+ * CreateTaskFormInput - Input type from UI forms that may contain Date objects.
+ * This is used internally by UI components before conversion to API format.
+ * All date fields can be Date objects which will be converted to ISO strings.
+ */
+export type CreateTaskFormInput = {
+  url: string;
+  requestType: RequestType;
+  priority: Priority;
+  contentType?: string;
+
+  // Optional fields - dates are Date objects from UI pickers
   backcrawlDepthDays?: number;
   backcrawlStartTime?: Date;
   backcrawlEndTime?: Date;
@@ -192,25 +254,72 @@ export interface Task {
   endCollectionTime?: Date;
   isAlwaysRun?: boolean;
   isCollectPopularPostOnly?: boolean;
-  platform?: string;
+  platform?: Platform;
   recurringFreqHours?: number;
   startCollectionTime?: Date;
   tags?: string[];
   title?: string;
   zone?: string;
+};
 
-  // From latest TmsRequestEvent
-  latestEvent?: TmsRequestEvent; // Latest event for this request
-  user: string; // From latest event
+/**
+ * CreateTaskApiPayload - Payload sent to the createTask API.
+ * All date fields are ISO timestamp strings.
+ * This is what crosses the API boundary.
+ */
+export type CreateTaskApiPayload = {
+  url: string;
+  requestType: RequestType;
+  priority: Priority;
+  contentType?: string;
 
-  // From Col_Request (most recent collection in R-Segment)
-  collectionStatus?: CollectionStatus;
-  colEndTime?: Date; // Last Collected timestamp
-  estimatedColDurationMins?: number;
+  // Optional fields - all dates are ISO strings
+  backcrawlDepthDays?: number;
+  backcrawlStartTime?: string; // ISO timestamp
+  backcrawlEndTime?: string; // ISO timestamp
+  country?: string;
+  cutOffTime?: string; // ISO timestamp
+  endCollectionTime?: string; // ISO timestamp
+  isAlwaysRun?: boolean;
+  isCollectPopularPostOnly?: boolean;
+  platform?: Platform;
+  recurringFreqHours?: number;
+  startCollectionTime?: string; // ISO timestamp
+  tags?: string[];
+  title?: string;
+  zone?: string;
+};
 
-  // UI-only fields (derived)
-  depth: Depth; // Derived from backcrawl fields
-  changeStatus: ChangeStatus | null; // Derived from latestEvent.eventType and status
+/**
+ * Maps a CreateTaskFormInput (with Date objects) to CreateTaskApiPayload (with ISO strings).
+ * This is the SINGLE place where Date → ISO conversion happens for task creation.
+ *
+ * @param input - Form input with Date objects
+ * @returns API payload with ISO timestamp strings
+ */
+export function mapCreateTaskFormToApi(input: CreateTaskFormInput): CreateTaskApiPayload {
+  return {
+    url: input.url,
+    requestType: input.requestType,
+    priority: input.priority,
+    contentType: input.contentType,
+
+    // Convert Date objects to ISO strings
+    backcrawlDepthDays: input.backcrawlDepthDays,
+    backcrawlStartTime: input.backcrawlStartTime?.toISOString(),
+    backcrawlEndTime: input.backcrawlEndTime?.toISOString(),
+    country: input.country,
+    cutOffTime: input.cutOffTime?.toISOString(),
+    endCollectionTime: input.endCollectionTime?.toISOString(),
+    isAlwaysRun: input.isAlwaysRun,
+    isCollectPopularPostOnly: input.isCollectPopularPostOnly,
+    platform: input.platform,
+    recurringFreqHours: input.recurringFreqHours,
+    startCollectionTime: input.startCollectionTime?.toISOString(),
+    tags: input.tags,
+    title: input.title,
+    zone: input.zone,
+  };
 }
 
 // ========================================
@@ -270,7 +379,16 @@ export interface XmlPayload {
 // ========================================
 
 /**
- * Helper function to derive ChangeStatus from TmsRequestEvent
+ * Minimal event fields needed to derive change status
+ * Works with both full TmsRequestEvent and the latestEvent in Task (which omits user/userGroup)
+ */
+interface EventForChangeStatus {
+  eventType: EventType;
+  status: EventStatus;
+}
+
+/**
+ * Helper function to derive ChangeStatus from an event
  * This determines which visual indicator to show in the UI
  *
  * Stage 1 Workflow (per S->R Segment Sync doc):
@@ -278,8 +396,10 @@ export interface XmlPayload {
  * - PENDING_UPLOAD shows as awaiting upload (blue dot)
  * - UPLOADED shows as successfully uploaded
  * - CONFLICT shows as conflict (event arrived too late)
+ *
+ * @param event - Event object with eventType and status (can be full TmsRequestEvent or latestEvent from Task)
  */
-export function deriveChangeStatus(event?: TmsRequestEvent): ChangeStatus | null {
+export function deriveChangeStatus(event?: EventForChangeStatus | null): ChangeStatus | null {
   if (!event) {
     return null;
   }
@@ -314,3 +434,135 @@ export function deriveChangeStatus(event?: TmsRequestEvent): ChangeStatus | null
 
   return null;
 }
+
+/**
+ * Input for deriving depth from backcrawl fields.
+ * Works with both Task and TmsRequest since both have these optional fields.
+ */
+interface BackcrawlFields {
+  backcrawlDepthDays?: number;
+  backcrawlStartTime?: string; // ISO timestamp
+  backcrawlEndTime?: string; // ISO timestamp
+}
+
+/**
+ * Helper function to derive Depth from backcrawl fields.
+ * Determines the depth type based on which fields are set.
+ * Works with Task objects that have ISO timestamp strings.
+ *
+ * @param fields - Object containing backcrawl fields (from Task or TmsRequest)
+ * @returns Depth discriminated union for UI display
+ */
+export function deriveDepthFromTask(fields: BackcrawlFields): Depth {
+  // If backcrawlStartTime is set, it's a date range
+  if (fields.backcrawlStartTime) {
+    return {
+      type: DepthType.DATE_RANGE,
+      startDate: fields.backcrawlStartTime, // Already ISO string
+      endDate: fields.backcrawlEndTime, // Already ISO string
+    };
+  }
+
+  // If backcrawlDepthDays is set, it's last N days
+  if (fields.backcrawlDepthDays !== undefined && fields.backcrawlDepthDays > 0) {
+    return {
+      type: DepthType.LAST_DAYS,
+      days: fields.backcrawlDepthDays,
+    };
+  }
+
+  // Default to last 2 hours
+  return {
+    type: DepthType.LAST_HOURS,
+    hours: 2,
+  };
+}
+
+/**
+ * @deprecated Use deriveDepthFromTask instead
+ */
+export const deriveDepthFromRequest = deriveDepthFromTask;
+
+/**
+ * Mapper function to create a Task API response object from domain models.
+ * Combines TmsRequest, its events, and optional collection data into a unified API response.
+ *
+ * NOTE: This function is used by the mock API to create Task objects.
+ * The real backend API would return this shape directly.
+ *
+ * @param request - The TMS_Request document
+ * @param events - All TMS_Request_Event documents for this request (sorted by createdTime desc)
+ * @param colData - Optional collection data from R-Segment
+ * @returns Task object matching API response shape (no derived fields)
+ */
+export function toTaskFromDomainModels(
+  request: TmsRequest,
+  events: TmsRequestEvent[],
+  colData?: ColRequestData
+): Task {
+  // Get the latest event (events should be sorted by createdTime desc)
+  // Task requires latestEvent, so we need at least one event
+  const latestEvent = events[0];
+  if (!latestEvent) {
+    throw new Error(`Task ${request._id} has no events`);
+  }
+
+  // Derive the user from the latest event
+  const user = latestEvent.user;
+
+  // Create latestEvent without user/userGroup (they're at top level)
+  const latestEventForTask: Omit<TmsRequestEvent, "user" | "userGroup"> = {
+    _id: latestEvent._id,
+    approvedBy: latestEvent.approvedBy,
+    createdTime: latestEvent.createdTime,
+    eventType: latestEvent.eventType,
+    payload: latestEvent.payload,
+    requestId: latestEvent.requestId,
+    status: latestEvent.status,
+    uploadedTime: latestEvent.uploadedTime,
+    version: latestEvent.version,
+  };
+
+  return {
+    // Core identity
+    id: request._id,
+    archived: request.archived,
+    url: request.url,
+    requestType: request.requestType,
+    priority: request.priority,
+    contentType: request.contentType,
+    createdTime: request.createdTime,
+    userGroup: request.userGroup,
+    version: request.version,
+
+    // Optional fields from request (all ISO strings)
+    backcrawlDepthDays: request.backcrawlDepthDays,
+    backcrawlStartTime: request.backcrawlStartTime,
+    backcrawlEndTime: request.backcrawlEndTime,
+    country: request.country,
+    cutOffTime: request.cutOffTime,
+    endCollectionTime: request.endCollectionTime,
+    isAlwaysRun: request.isAlwaysRun,
+    isCollectPopularPostOnly: request.isCollectPopularPostOnly,
+    platform: request.platform,
+    recurringFreqHours: request.recurringFreqHours,
+    startCollectionTime: request.startCollectionTime,
+    tags: request.tags,
+    title: request.title,
+    zone: request.zone,
+
+    // From latest event
+    latestEvent: latestEventForTask,
+    user,
+
+    // From collection data (use null for missing values per API contract)
+    collectionStatus: colData?.status ?? null,
+    colEndTime: colData?.colEndTime ?? null,
+    estimatedColDurationMins: colData?.estimatedColDurationMins ?? null,
+  };
+}
+
+/**
+ * @deprecated Use toTaskFromDomainModels instead
+ */
+export const toTaskViewModel = toTaskFromDomainModels;
