@@ -30,6 +30,8 @@ export enum EventType {
   CREATE = "CREATE",
   UPDATE = "UPDATE",
   DELETE = "DELETE",
+  PAUSE = "PAUSE",
+  RESUME = "RESUME",
 }
 
 // Event Status enum - maps to TMS_Request_Event.status (per ERD)
@@ -38,19 +40,20 @@ export enum EventStatus {
   APPROVED = "APPROVED", // Event approved for export (per ERD)
   PENDING_UPLOAD = "PENDING_UPLOAD", // Event included in XML export, waiting for upload
   UPLOADED = "UPLOADED", // Event successfully uploaded to W
+  CONFLICT = "CONFLICT", // There is a conflict when tasking is completed, but a DELETE event is created
 }
 
 // Collection Request Status enum - maps to Col_Request.status
 export enum CollectionStatus {
-  PENDING_C = "PENDING_C",
   COLLECTING = "COLLECTING",
   COMPLETED = "COMPLETED",
-  SUSPENDED = "SUSPENDED",
-  ERROR = "ERROR",
-  PAUSED = "PAUSED",
-  ERROR_COUNT = "ERROR_COUNT",
   DELETING = "DELETING",
   DELETED = "DELETED",
+  ERROR = "ERROR",
+  ERROR_COUNT = "ERROR_COUNT",
+  PAUSED = "PAUSED",
+  PENDING_C = "PENDING_C",
+  SUSPENDED = "SUSPENDED",
 }
 
 // UI Change Status - derived from TMS_Request_Event for visual indicators
