@@ -76,8 +76,8 @@ export function serializePayload(task: Task): XmlPayload {
   };
 
   // Optional fields with proper conversions
-  if (task.backcrawlDepthDays !== undefined) {
-    payload.a = task.backcrawlDepthDays; // int (no conversion needed)
+  if (task.backcrawlDepthHours !== undefined) {
+    payload.a = task.backcrawlDepthHours; // int (no conversion needed)
   }
 
   if (task.backcrawlEndTime) {

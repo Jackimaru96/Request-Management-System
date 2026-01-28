@@ -116,17 +116,18 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
     }
 
     // Determine backcrawl fields based on depth type selection
-    let backcrawlDepthDays: number | undefined;
+    let backcrawlDepthHours: number | undefined;
     let backcrawlStartTime: Date | undefined;
     let backcrawlEndTime: Date | undefined;
 
     if (depthType === DepthType.LAST_DAYS) {
-      backcrawlDepthDays = lastXDays;
+      // Convert days to hours for storage
+      backcrawlDepthHours = lastXDays * 24;
     } else if (depthType === DepthType.DATE_RANGE) {
       backcrawlStartTime = dateRangeStart;
       backcrawlEndTime = dateRangeEnd || undefined;
     }
-    // For LAST_HOURS, no backcrawl fields are set (default behavior)
+    // For LAST_HOURS (Last 2 hours), no backcrawl fields are set (default behavior)
 
     // Build form input with Date objects (UI layer)
     const formInput: CreateTaskFormInput = {
@@ -135,7 +136,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       priority,
 
       // Backcrawl fields based on depth type
-      backcrawlDepthDays,
+      backcrawlDepthHours,
       backcrawlStartTime,
       backcrawlEndTime,
 

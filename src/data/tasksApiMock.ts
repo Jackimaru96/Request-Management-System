@@ -85,7 +85,7 @@ export function seedTasks(): Task[] {
       createdTime: "2026-01-14T09:15:00.000+08:00",
       userGroup: "analysts",
       version: 3,
-      backcrawlDepthDays: 2,
+      backcrawlDepthHours: 48, // 2 days * 24 hours
       country: "Germany",
       zone: "G",
       latestEvent: createLatestEvent({
@@ -183,7 +183,7 @@ export function seedTasks(): Task[] {
       userGroup: "analysts",
       version: 3,
       recurringFreqHours: 4,
-      backcrawlDepthDays: 3,
+      backcrawlDepthHours: 72, // 3 days * 24 hours
       country: "Japan",
       zone: "W",
       latestEvent: createLatestEvent({
@@ -315,7 +315,7 @@ export function seedTasks(): Task[] {
       createdTime: "2026-01-14T04:15:00.000+08:00",
       userGroup: "analysts",
       version: 3,
-      backcrawlDepthDays: 2,
+      backcrawlDepthHours: 48, // 2 days * 24 hours
       country: "India",
       zone: "R",
       latestEvent: createLatestEvent({
@@ -424,7 +424,7 @@ export async function listTasks(): Promise<Task[]> {
  *   requestType: "ADHOC" | "RECURRING" | "LIVESTREAM",
  *   priority: 0 | 1 | 2 | 3,
  *   contentType?: string,
- *   backcrawlDepthDays?: number,
+ *   backcrawlDepthHours?: number,
  *   backcrawlStartTime?: string (ISO),
  *   backcrawlEndTime?: string (ISO),
  *   country?: string,
@@ -479,7 +479,7 @@ export async function createTask(payload: CreateTaskApiPayload): Promise<Task> {
     requestType: payload.requestType,
     priority: payload.priority,
     contentType: payload.contentType,
-    backcrawlDepthDays: payload.backcrawlDepthDays,
+    backcrawlDepthHours: payload.backcrawlDepthHours,
     backcrawlStartTime: payload.backcrawlStartTime,
     backcrawlEndTime: payload.backcrawlEndTime,
     country: payload.country,

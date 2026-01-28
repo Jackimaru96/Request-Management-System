@@ -121,7 +121,7 @@ export type DepthLastHours = {
 
 export type DepthLastDays = {
   type: DepthType.LAST_DAYS;
-  days: number; // Maps to backcrawlDepthDays
+  days: number; // Derived from backcrawlDepthHours (hours / 24)
 };
 
 export type DepthDateRange = {
@@ -141,7 +141,7 @@ export type Depth = DepthLastHours | DepthLastDays | DepthDateRange;
 export interface TmsRequest {
   _id: string; // Unique UUID for the request
   archived: boolean; // Whether the request is archived (soft delete)
-  backcrawlDepthDays?: number; // in days
+  backcrawlDepthHours?: number; // in hours (for "Last X days", stores days * 24)
   backcrawlEndTime?: string; // ISO timestamp
   backcrawlStartTime?: string; // ISO timestamp
   contentType: ContentType;
@@ -209,7 +209,7 @@ export interface Task {
   version: number;
 
   // Optional fields from TMS_Request (all dates are ISO timestamps)
-  backcrawlDepthDays?: number;
+  backcrawlDepthHours?: number; // in hours (for "Last X days", stores days * 24)
   backcrawlStartTime?: string; // ISO timestamp
   backcrawlEndTime?: string; // ISO timestamp
   country?: string;
@@ -246,7 +246,7 @@ export type CreateTaskFormInput = {
   contentType?: string;
 
   // Optional fields - dates are Date objects from UI pickers
-  backcrawlDepthDays?: number;
+  backcrawlDepthHours?: number; // in hours (for "Last X days", UI converts days * 24)
   backcrawlStartTime?: Date;
   backcrawlEndTime?: Date;
   country?: string;
@@ -274,7 +274,7 @@ export type CreateTaskApiPayload = {
   contentType?: string;
 
   // Optional fields - all dates are ISO strings
-  backcrawlDepthDays?: number;
+  backcrawlDepthHours?: number; // in hours (for "Last X days", stores days * 24)
   backcrawlStartTime?: string; // ISO timestamp
   backcrawlEndTime?: string; // ISO timestamp
   country?: string;
@@ -305,7 +305,7 @@ export function mapCreateTaskFormToApi(input: CreateTaskFormInput): CreateTaskAp
     contentType: input.contentType,
 
     // Convert Date objects to ISO strings
-    backcrawlDepthDays: input.backcrawlDepthDays,
+    backcrawlDepthHours: input.backcrawlDepthHours,
     backcrawlStartTime: input.backcrawlStartTime?.toISOString(),
     backcrawlEndTime: input.backcrawlEndTime?.toISOString(),
     country: input.country,
@@ -359,7 +359,7 @@ export interface TaskDisplay {
  * Use xmlSerializers.ts helpers for conversion from Task to XmlPayload.
  */
 export interface XmlPayload {
-  a?: number; // backcrawlDepthDays (int)
+  a?: number; // backcrawlDepthHours (int, in hours)
   b?: number; // backcrawlEndTime (epoch milliseconds)
   c?: number; // backcrawlStartTime (epoch milliseconds)
   d?: number; // cutOffTime (epoch milliseconds)
@@ -440,7 +440,7 @@ export function deriveChangeStatus(event?: EventForChangeStatus | null): ChangeS
  * Works with both Task and TmsRequest since both have these optional fields.
  */
 interface BackcrawlFields {
-  backcrawlDepthDays?: number;
+  backcrawlDepthHours?: number; // in hours (for "Last X days", stores days * 24)
   backcrawlStartTime?: string; // ISO timestamp
   backcrawlEndTime?: string; // ISO timestamp
 }
@@ -463,11 +463,11 @@ export function deriveDepthFromTask(fields: BackcrawlFields): Depth {
     };
   }
 
-  // If backcrawlDepthDays is set, it's last N days
-  if (fields.backcrawlDepthDays !== undefined && fields.backcrawlDepthDays > 0) {
+  // If backcrawlDepthHours is set, it's last N days (stored as hours, convert back to days)
+  if (fields.backcrawlDepthHours !== undefined && fields.backcrawlDepthHours > 0) {
     return {
       type: DepthType.LAST_DAYS,
-      days: fields.backcrawlDepthDays,
+      days: Math.round(fields.backcrawlDepthHours / 24), // Convert hours back to days for display
     };
   }
 
@@ -536,7 +536,7 @@ export function toTaskFromDomainModels(
     version: request.version,
 
     // Optional fields from request (all ISO strings)
-    backcrawlDepthDays: request.backcrawlDepthDays,
+    backcrawlDepthHours: request.backcrawlDepthHours,
     backcrawlStartTime: request.backcrawlStartTime,
     backcrawlEndTime: request.backcrawlEndTime,
     country: request.country,

@@ -275,7 +275,7 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
                     color: "text.secondary",
                   }}
                 >
-                  No tasks added yet. Click "+ ADD ANOTHER TASK" to add a task.
+                  {'No tasks added yet. Click "+ ADD ANOTHER TASK" to add a task.'}
                 </Box>
               )}
 
