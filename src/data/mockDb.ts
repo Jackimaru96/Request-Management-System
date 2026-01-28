@@ -123,19 +123,60 @@ export function resetDb(): void {
 }
 
 /**
+ * Check for duplicate task IDs and log a warning if found
+ * This is a dev-only sanity check to catch bugs early
+ */
+function checkForDuplicateIds(tasks: Task[], context: string): void {
+  const idSet = new Set<string>();
+  const duplicates: string[] = [];
+
+  for (const task of tasks) {
+    if (idSet.has(task.id)) {
+      duplicates.push(task.id);
+    } else {
+      idSet.add(task.id);
+    }
+  }
+
+  if (duplicates.length > 0) {
+    console.error(
+      `[MockDB] DUPLICATE IDs DETECTED (${context}):`,
+      duplicates,
+      "\nThis indicates a bug in task creation or persistence.",
+      "\nCall window.__TMS_MOCK_DB_RESET__() to reset the database."
+    );
+  }
+}
+
+/**
  * Get all tasks from the database
+ * Includes a dev-only duplicate ID check
  */
 export function getAllTasks(): Task[] {
   const db = getDb();
+
+  // Dev-only sanity check for duplicate IDs
+  if (process.env.NODE_ENV !== "production") {
+    checkForDuplicateIds(db.tasks, "getAllTasks");
+  }
+
   return db.tasks;
 }
 
 /**
  * Update tasks in the database
+ * Includes validation to prevent duplicate IDs
  */
 export function updateTasks(updater: (tasks: Task[]) => Task[]): void {
   const db = getDb();
-  db.tasks = updater(db.tasks);
+  const updatedTasks = updater(db.tasks);
+
+  // Dev-only sanity check for duplicate IDs after update
+  if (process.env.NODE_ENV !== "production") {
+    checkForDuplicateIds(updatedTasks, "updateTasks");
+  }
+
+  db.tasks = updatedTasks;
   saveDb(db);
 }
 

@@ -19,7 +19,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { deriveDepthFromTask, Task } from "../types";
 import {
-  formatDate,
+  formatIsoDate,
   formatFrequency,
   formatDepth,
   getPriorityLabel,
@@ -52,24 +52,25 @@ function TaskDetailsDialog(props: TaskDetailsDialogProps): JSX.Element {
   // Format collection status
   const collectionStatusDisplay = task.collectionStatus ? toCamelCase(task.collectionStatus) : "-";
 
-  // Format last collected
-  const lastCollectedDisplay = task.colEndTime ? formatDate(new Date(task.colEndTime)) : "-";
+  // Format last collected (colEndTime is ISO string or null)
+  const lastCollectedDisplay = task.colEndTime ? formatIsoDate(task.colEndTime) : "-";
 
-  // Format collection start time
+  // Format collection start time (startCollectionTime is ISO string or undefined)
   const collectionStartDisplay = task.startCollectionTime
-    ? formatDate(new Date(task.startCollectionTime))
+    ? formatIsoDate(task.startCollectionTime)
     : "-";
 
-  // Format collection end time
+  // Format collection end time (endCollectionTime is ISO string or undefined)
   const collectionEndDisplay = task.endCollectionTime
-    ? formatDate(new Date(task.endCollectionTime))
+    ? formatIsoDate(task.endCollectionTime)
     : "N/A";
 
   // Mock tasking history (if real history exists in future, replace this)
+  // latestEvent.createdTime is ISO string
   const taskingHistory = task.latestEvent
     ? [
         {
-          time: formatDate(new Date(task.latestEvent.createdTime)),
+          time: formatIsoDate(task.latestEvent.createdTime),
           status: toCamelCase(task.latestEvent.eventType),
         },
       ]

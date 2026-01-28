@@ -1,7 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import HistoryIcon from "@mui/icons-material/History";
 import InfoIcon from "@mui/icons-material/Info";
 import RemoveIcon from "@mui/icons-material/Remove";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -16,15 +15,22 @@ import { JSX, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   useCreateTaskMutation,
-  useTasksQuery,
   useDeleteSelectedTasksMutation,
+  useTasksQuery,
 } from "../../queries/tasks";
 import { priorityColors, strikethroughDimmedStyle } from "../../utils/textStyling";
 import AddTasksStagingDialog from "./components/AddTasksStagingDialog";
 import DeleteSelectedConfirmDialog from "./components/DeleteSelectedConfirmDialog";
 import TaskDetailsDialog from "./components/TaskDetailsDialog";
 import { tasksToDisplay } from "./helpers";
-import { ChangeStatus, EventStatus, EventType, Task, TaskDisplay } from "./types";
+import {
+  ChangeStatus,
+  CreateTaskApiPayload,
+  EventStatus,
+  EventType,
+  Task,
+  TaskDisplay,
+} from "./types";
 
 function RequestListingPage(): JSX.Element {
   const navigate = useNavigate();
@@ -108,24 +114,12 @@ function RequestListingPage(): JSX.Element {
   }, [selectedTasks]);
 
   // Handle adding multiple tasks using React Query mutation
-  const handleAddTasks = (
-    newTasks: Omit<
-      Task,
-      | "id"
-      | "createdTime"
-      | "user"
-      | "userGroup"
-      | "version"
-      | "changeStatus"
-      | "latestEvent"
-      | "collectionStatus"
-      | "colEndTime"
-      | "estimatedColDuration"
-    >[],
-  ): void => {
+  // Accepts CreateTaskApiPayload[] - all dates are already ISO strings
+  const handleAddTasks = (newTasks: CreateTaskApiPayload[]): void => {
     // Create each task using the mutation
     // The mutation will handle optimistic updates and add to cache
     newTasks.forEach((newTask) => {
+      console.log(newTask);
       createTaskMutation.mutate(newTask);
     });
   };
@@ -163,7 +157,9 @@ function RequestListingPage(): JSX.Element {
   // Helper to check if task is pending deletion (DELETE event with any status before UPLOADED)
   const isPendingDeletion = (taskId: string): boolean => {
     const task = tasks.find((t: Task) => t.id === taskId);
-    if (!task?.latestEvent) return false;
+    if (!task?.latestEvent) {
+      return false;
+    }
 
     return (
       task.latestEvent.eventType === EventType.DELETE &&

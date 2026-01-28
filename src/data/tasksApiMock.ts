@@ -338,8 +338,46 @@ export function seedTasks(): Task[] {
   ];
 }
 
-// ID counter for generating new task IDs
-let idCounter = 11;
+/**
+ * Generate a unique task ID using crypto.randomUUID()
+ * Falls back to a timestamp-based ID if crypto is unavailable
+ */
+function generateUniqueId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Check if an ID already exists in the task list
+ */
+function idExistsInTasks(id: string, tasks: Task[]): boolean {
+  return tasks.some((task) => task.id === id);
+}
+
+/**
+ * Generate a unique ID that doesn't exist in the current tasks
+ * This is a defensive guard against the extremely unlikely case of UUID collision
+ */
+function generateSafeUniqueId(existingTasks: Task[]): string {
+  let id = generateUniqueId();
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (idExistsInTasks(id, existingTasks) && attempts < maxAttempts) {
+    console.warn(`[MockDB] ID collision detected for ${id}, regenerating...`);
+    id = generateUniqueId();
+    attempts++;
+  }
+
+  if (attempts >= maxAttempts) {
+    throw new Error("[MockDB] Failed to generate unique ID after multiple attempts");
+  }
+
+  return id;
+}
 
 // Simulate network latency
 function simulateNetworkLatency(): Promise<void> {
@@ -416,8 +454,9 @@ export async function createTask(payload: CreateTaskApiPayload): Promise<Task> {
   const currentUser = "current_user"; // TODO: Get from auth context
   const currentUserGroup = "default_group"; // TODO: Get from auth context
 
-  idCounter = idCounter + 1;
-  const taskId = `task-${idCounter}`;
+  // Generate unique ID using UUID (server-side responsibility)
+  const existingTasks = getAllTasks();
+  const taskId = generateSafeUniqueId(existingTasks);
 
   // Stage 1: Auto-approve - create APPROVED event (E2)
   const approvedEventId = `evt-${taskId}-approved`;

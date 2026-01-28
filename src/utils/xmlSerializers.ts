@@ -5,7 +5,7 @@
  * Task data structures to ERD-compliant XML format.
  *
  * Key conversions per ERD:
- * - Datetime fields → epoch milliseconds (number)
+ * - Datetime fields (ISO strings) → epoch milliseconds (number)
  * - Boolean fields → 0 or 1 (number)
  * - Priority enum → numeric value (0-3)
  * - RequestType enum → string value
@@ -16,11 +16,21 @@
 import { Task, XmlPayload } from "../pages/RequestListingPage/types";
 
 /**
- * Convert Date to epoch milliseconds
- * Returns undefined if date is undefined (preserves optionality)
+ * Convert ISO timestamp string to epoch milliseconds
+ * Returns undefined if input is undefined/null (preserves optionality)
  *
- * @param date - JavaScript Date object
+ * @param isoString - ISO timestamp string (e.g., "2026-01-27T15:38:13.998+08:00")
  * @returns Epoch milliseconds since Jan 1, 1970 UTC, or undefined
+ */
+export function isoToEpochMs(isoString: string | undefined | null): number | undefined {
+  if (!isoString) {
+    return undefined;
+  }
+  return new Date(isoString).getTime();
+}
+
+/**
+ * @deprecated Use isoToEpochMs instead - Task date fields are now ISO strings
  */
 export function toEpochMs(date: Date | undefined): number | undefined {
   if (!date) {
@@ -47,13 +57,13 @@ export function boolToInt(value: boolean | undefined): number | undefined {
  * Convert Task to ERD-compliant XmlPayload
  *
  * This function performs all necessary type conversions:
- * - Date → epoch ms
+ * - ISO string → epoch ms
  * - boolean → 0/1
  * - Enums → appropriate values
  *
- * Maps to payload structure defined in ERD (fields a-m).
+ * Maps to payload structure defined in ERD (fields a-p).
  *
- * @param task - Task object from application state
+ * @param task - Task object from application state (date fields are ISO strings)
  * @returns XmlPayload with properly serialized values
  */
 export function serializePayload(task: Task): XmlPayload {
@@ -71,19 +81,19 @@ export function serializePayload(task: Task): XmlPayload {
   }
 
   if (task.backcrawlEndTime) {
-    payload.b = toEpochMs(task.backcrawlEndTime); // datetime → epoch ms
+    payload.b = isoToEpochMs(task.backcrawlEndTime); // ISO string → epoch ms
   }
 
   if (task.backcrawlStartTime) {
-    payload.c = toEpochMs(task.backcrawlStartTime); // datetime → epoch ms
+    payload.c = isoToEpochMs(task.backcrawlStartTime); // ISO string → epoch ms
   }
 
   if (task.cutOffTime) {
-    payload.d = toEpochMs(task.cutOffTime); // datetime → epoch ms
+    payload.d = isoToEpochMs(task.cutOffTime); // ISO string → epoch ms
   }
 
   if (task.endCollectionTime) {
-    payload.f = toEpochMs(task.endCollectionTime); // datetime → epoch ms
+    payload.f = isoToEpochMs(task.endCollectionTime); // ISO string → epoch ms
   }
 
   if (task.isAlwaysRun !== undefined) {
@@ -99,7 +109,7 @@ export function serializePayload(task: Task): XmlPayload {
   }
 
   if (task.startCollectionTime) {
-    payload.n = toEpochMs(task.startCollectionTime); // datetime → epoch ms
+    payload.n = isoToEpochMs(task.startCollectionTime); // ISO string → epoch ms
   }
 
   return payload;

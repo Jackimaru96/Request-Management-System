@@ -23,7 +23,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { deriveDepthFromTask, Task } from "../types";
+import { CreateTaskApiPayload, deriveDepthFromTask } from "../types";
 import { formatFrequency, formatDepth, getPriorityLabel, toCamelCase } from "../helpers";
 import AddTaskDialog from "./AddTaskDialog";
 import { priorityColors } from "../../../utils/textStyling";
@@ -31,9 +31,7 @@ import { priorityColors } from "../../../utils/textStyling";
 interface AddTasksStagingDialogProps {
   open: boolean;
   onClose: () => void;
-  onAddTasks: (
-    tasks: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">[],
-  ) => void;
+  onAddTasks: (tasks: CreateTaskApiPayload[]) => void;
 }
 
 function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
@@ -42,10 +40,8 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
   // View state: 'upload' or 'staging'
   const [view, setView] = useState<"upload" | "staging">("upload");
 
-  // Staging table state
-  const [stagedTasks, setStagedTasks] = useState<
-    Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">[]
-  >([]);
+  // Staging table state - uses CreateTaskApiPayload (all dates as ISO strings)
+  const [stagedTasks, setStagedTasks] = useState<CreateTaskApiPayload[]>([]);
 
   // File upload state
   const [dragActive, setDragActive] = useState(false);
@@ -62,9 +58,8 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
     onClose();
   };
 
-  const handleAddTask = (
-    newTask: Omit<Task, "id" | "status" | "createdTime" | "user" | "userGroup" | "changeStatus">,
-  ): void => {
+  // Receives CreateTaskApiPayload from AddTaskDialog (dates already converted to ISO strings)
+  const handleAddTask = (newTask: CreateTaskApiPayload): void => {
     if (editingTaskIndex !== null) {
       // Update existing task
       const updatedTasks = [...stagedTasks];
@@ -136,7 +131,7 @@ function AddTasksStagingDialog(props: AddTasksStagingDialogProps): JSX.Element {
 
   const handleFiles = (files: FileList): void => {
     // TODO: Parse CSV/Excel files and convert to tasks
-    console.log("Files to process:", files);
+    window.alert("Files to process:" + JSON.stringify(files, null, 2));
     // For now, just show an alert
     alert("File upload will be implemented. For now, please use 'Add a Task Manually'.");
   };

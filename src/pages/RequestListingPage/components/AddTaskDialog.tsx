@@ -133,7 +133,6 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
       url: url.trim(),
       requestType: requestType,
       priority,
-      contentType: "PAGE", // Default value, should be configurable
 
       // Backcrawl fields based on depth type
       backcrawlDepthDays,

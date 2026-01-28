@@ -24,6 +24,12 @@ export function useTasksQuery(): UseQueryResult<Task[], Error> {
  * Accepts CreateTaskApiPayload where all dates are ISO timestamp strings.
  * The UI should use mapCreateTaskFormToApi() to convert Date objects before calling mutate().
  *
+ * Architecture:
+ * - UI sends only required fields (CreateTaskApiPayload)
+ * - API generates id, createdTime, version, latestEvent, etc.
+ * - After success, we invalidate the query to refetch from server (mock DB)
+ * - This ensures the table always reflects server truth, no double insertion
+ *
  * TODO: Update with real API
  * Endpoint: POST /api/tms/requests
  * Body: CreateTaskApiPayload
@@ -34,15 +40,10 @@ export function useCreateTaskMutation(): UseMutationResult<Task, Error, CreateTa
 
   return useMutation({
     mutationFn: createTask,
-    onSuccess: (newTask) => {
-      // Optimistically update the cache with the new task
-      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (oldTasks) => {
-        if (!oldTasks) {
-          return [newTask];
-        }
-        // Add new task to the beginning of the list
-        return [newTask, ...oldTasks];
-      });
+    onSuccess: () => {
+      // Invalidate and refetch tasks from server (mock DB)
+      // This ensures table reflects server truth and prevents duplicate insertion
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
     },
   });
 }
