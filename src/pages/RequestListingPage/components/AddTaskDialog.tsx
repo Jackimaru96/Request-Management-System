@@ -98,7 +98,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
     setDateRangeEnd(null);
     setPriority(Priority.MEDIUM);
     setCountry("");
-    setRecurringFreq(1);
+    setRecurringFreq(2);
     const date = new Date();
     date.setHours(date.getHours() + 24);
     setCutOffTime(date);
@@ -294,7 +294,7 @@ function AddTaskDialog(props: AddTaskDialogProps): JSX.Element {
                 label="Frequency (hours)"
                 value={recurringFreq}
                 onChange={(e) => setRecurringFreq(Math.max(1, parseInt(e.target.value) || 1))}
-                inputProps={{ min: 1 }}
+                inputProps={{ min: 2 }}
                 sx={{ mb: 2 }}
               />
             )}
